@@ -30,7 +30,14 @@ PKG_SEARCH_MODULE(SDL2 REQUIRED sdl2)
 include(ExternalProject)
 include_directories(${CMAKE_BINARY_DIR}/include)
 link_directories(${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "arm*")
+  message(STATUS "ARM processor detected, will attempt to use NEON.")
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ARM_NEON__")
+  add_definitions(-D__ARM_NEON__ -flax-vector-conversions) # for BRISK
+else()
+  message(STATUS "Assuming SSE instructions available.")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+endif()
 ExternalProject_Add(brisk_external
   URL "https://www.doc.ic.ac.uk/~sleutene/software/brisk-cameraaware.zip"
   INSTALL_DIR ${CMAKE_BINARY_DIR}
