@@ -20,6 +20,7 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   pubReset_ = nh_->advertise<std_msgs::Empty>("/ardrone/reset", 1);
   pubTakeoff_ = nh_->advertise<std_msgs::Empty>("/ardrone/takeoff", 1);
   pubLand_ = nh_->advertise<std_msgs::Empty>("/ardrone/land", 1);
+  pubMove_ = nh_->advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
   // flattrim service
   srvFlattrim_ = nh_->serviceClient<std_srvs::Empty>(
@@ -41,6 +42,17 @@ Autopilot::DroneStatus Autopilot::droneStatus()
     navdata = lastNavdata_;
   }
   return DroneStatus(navdata.state);
+}
+
+// Get the drone battery.
+float Autopilot::droneBattery()
+{
+  ardrone_autonomy::Navdata navdata;
+  {
+    std::lock_guard<std::mutex> l(navdataMutex_);
+    navdata = lastNavdata_;
+  }
+  return navdata.batteryPercent;
 }
 
 // Request flattrim calibration.
@@ -100,9 +112,24 @@ bool Autopilot::manualMove(double forward, double left, double up,
 }
 
 // Move the drone.
-bool Autopilot::move(double, double, double, double)
+bool Autopilot::move(double forward, double left, double up,
+                           double rotateLeft)
 {
-  // TODO: implement...
+
+  DroneStatus status = droneStatus();
+  if (status == DroneStatus::Flying || status == DroneStatus::Flying2 || status == DroneStatus::Hovering){
+    geometry_msgs::Twist moveMsg;
+    moveMsg.linear.x = forward;
+    moveMsg.linear.y = left;
+    moveMsg.linear.z = up;
+
+    moveMsg.angular.z = rotateLeft;
+
+    pubMove_.publish(moveMsg);
+
+    return true;
+  }
+
   return false;
 }
 

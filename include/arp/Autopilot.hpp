@@ -48,6 +48,25 @@ class Autopilot {
   /// \return The status.
   DroneStatus droneStatus();
 
+
+  std::string static getDroneStatusString(DroneStatus status) {
+      switch (status) {
+          case Unknown:    return "Unknown";
+          case Inited:     return "Inited";
+          case Landed:     return "Landed";
+          case Flying:     return "Flying";
+          case Hovering:   return "Hovering";
+          case Test:       return "Test";
+          case TakingOff:  return "Taking Off";
+          case Flying2:    return "Flying 2";
+          case Landing:    return "Landing";
+          case Looping:    return "Looping";
+          default:         return "Invalid Status";
+      }
+  }
+
+  float droneBattery();
+
   /// \brief Set to automatic control mode.
   void setManual();
 
@@ -100,6 +119,7 @@ class Autopilot {
   ros::Publisher pubReset_;  ///< The reset publisher -- use to reset the drone (e-stop).
   ros::Publisher pubTakeoff_;  ///< Publish to take-off the drone.
   ros::Publisher pubLand_;  ///< Publish to land the drone.
+  ros::Publisher pubMove_;  ///< Publish to move the drone.
   ros::ServiceClient srvFlattrim_;  ///< To request a flat trim calibration.
   ardrone_autonomy::Navdata lastNavdata_; ///< Store navdata as it comes in asynchronously.
   std::mutex navdataMutex_; ///< We need to lock navdata access due to asynchronous arrival.
