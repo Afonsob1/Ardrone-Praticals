@@ -82,6 +82,7 @@ int main(int argc, char **argv)
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
   cv::Mat image;
+  auto droneStatus = autopilot.droneStatus();
   while (ros::ok()) {
     ros::spinOnce();
     ros::Duration dur(0.04);
@@ -95,6 +96,9 @@ int main(int argc, char **argv)
     if(subscriber.getLastImage(image)) {
 
       // TODO: add overlays to the cv::Mat image, e.g. text
+
+      cv::putText(image, arp::Autopilot::getDroneStatusString(droneStatus), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+      cv::putText(image, std::to_string((int)autopilot.droneBattery()) + "%", cv::Point(560, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
       
       // https://stackoverflow.com/questions/22702630/converting-cvmat-to-sdl-texture
       // I'm using SDL_TEXTUREACCESS_STREAMING because it's for a video player, you should
@@ -114,7 +118,7 @@ int main(int argc, char **argv)
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 
     // check states!
-    auto droneStatus = autopilot.droneStatus();
+    droneStatus = autopilot.droneStatus();
     // command
     if (state[SDL_SCANCODE_ESCAPE]) {
       std::cout << "ESTOP PRESSED, SHUTTING OFF ALL MOTORS status=" << droneStatus;
@@ -154,7 +158,39 @@ int main(int argc, char **argv)
       }
     }
 
-    // TODO: process moving commands when in state 3,4, or 7
+    // check keyboard to move the drone
+    double forward = 0;
+    double left = 0;
+    double up = 0;
+    double rotateLeft = 0;
+
+    if (state[SDL_SCANCODE_UP]){
+      forward = 1;
+    }
+    if (state[SDL_SCANCODE_DOWN]){
+      forward = -1;
+    }
+    if (state[SDL_SCANCODE_LEFT]){
+      left = 1;
+    }
+    if (state[SDL_SCANCODE_RIGHT]){
+      left = -1;
+    }
+    if (state[SDL_SCANCODE_W]){
+      up = 1;
+    }
+    if (state[SDL_SCANCODE_S]){
+      up = -1;
+    }
+    if (state[SDL_SCANCODE_A]){
+      rotateLeft = 1;
+    }
+    if (state[SDL_SCANCODE_D]){
+      rotateLeft = -1;
+    }
+
+    autopilot.manualMove(forward, left, up, rotateLeft);
+
   }
 
   // make sure to land the drone...
