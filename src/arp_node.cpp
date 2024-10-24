@@ -99,6 +99,18 @@ int main(int argc, char **argv)
 
       cv::putText(image, arp::Autopilot::getDroneStatusString(droneStatus), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
       cv::putText(image, std::to_string((int)autopilot.droneBattery()) + "%", cv::Point(560, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+
+      if (droneStatus == arp::Autopilot::DroneStatus::Inited || droneStatus == arp::Autopilot::DroneStatus::Landed) {
+        cv::putText(image, "T", cv::Point(300, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+      }
+
+      if (droneStatus == arp::Autopilot::DroneStatus::Flying || droneStatus == arp::Autopilot::DroneStatus::Hovering || droneStatus == arp::Autopilot::DroneStatus::Flying2) {
+        cv::putText(image, "ESC", cv::Point(300, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "  W  ", cv::Point(10, 320), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "A S D", cv::Point(10, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "   UP   ", cv::Point(480, 320), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "LF DW RT", cv::Point(480, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+      }
       
       // https://stackoverflow.com/questions/22702630/converting-cvmat-to-sdl-texture
       // I'm using SDL_TEXTUREACCESS_STREAMING because it's for a video player, you should
@@ -165,28 +177,28 @@ int main(int argc, char **argv)
     double rotateLeft = 0;
 
     if (state[SDL_SCANCODE_UP]){
-      forward = 1;
+      forward += 1;
     }
     if (state[SDL_SCANCODE_DOWN]){
-      forward = -1;
+      forward += -1;
     }
     if (state[SDL_SCANCODE_LEFT]){
-      left = 1;
+      left += 1;
     }
     if (state[SDL_SCANCODE_RIGHT]){
-      left = -1;
+      left += -1;
     }
     if (state[SDL_SCANCODE_W]){
-      up = 1;
+      up += 1;
     }
     if (state[SDL_SCANCODE_S]){
-      up = -1;
+      up += -1;
     }
     if (state[SDL_SCANCODE_A]){
-      rotateLeft = 1;
+      rotateLeft += 1;
     }
     if (state[SDL_SCANCODE_D]){
-      rotateLeft = -1;
+      rotateLeft += -1;
     }
 
     autopilot.manualMove(forward, left, up, rotateLeft);
