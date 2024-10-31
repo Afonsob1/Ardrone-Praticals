@@ -132,14 +132,23 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(ardrone_practicals
+add_library(${PROJECT_NAME}
+   src/CameraBase.cpp
+)
+
+add_library(${PROJECT_NAME}_autopilot
    src/Autopilot.cpp
+)
+target_link_libraries(${PROJECT_NAME}_autopilot
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(ardrone_practicals ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_autopilot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 add_executable(arp_node src/arp_node.cpp)
@@ -150,7 +159,8 @@ add_dependencies(arp_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(arp_node
-  ardrone_practicals
+  ${PROJECT_NAME}
+  ${PROJECT_NAME}_autopilot
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${SDL2_LIBRARIES}
@@ -195,11 +205,12 @@ target_link_libraries(arp_node
 ## Testing ##
 #############
 
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ardrone_practicals.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(${PROJECT_NAME}_test test/test_ardrone_practicals.cpp)
+  target_link_libraries(${PROJECT_NAME}_test 
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${PROJECT_NAME}
+    pthread
+  )
+endif()
