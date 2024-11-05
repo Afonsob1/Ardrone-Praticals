@@ -73,11 +73,11 @@ bool RadialTangentialDistortion::distort(
 
   double r = sqrt(pow(pointUndistorted.x(), 2) + pow(pointUndistorted.y(), 2));
 
-  double x1 = pointUndistorted.x;
-  double x2 = pointUndistorted.y;
+  double x1 = pointUndistorted.x();
+  double x2 = pointUndistorted.y();
    
 
-  pointDistorted->x() =  (1 + k1_*pow(r,2) + k2_*pow(r,4)) * x1 + 2*this->p1_*x1*x2 + this->p2_*(pow(r,2) + 2*pow(x1,2))
+  pointDistorted->x() =  (1 + k1_*pow(r,2) + k2_*pow(r,4)) * x1 + 2*this->p1_*x1*x2 + this->p2_*(pow(r,2) + 2*pow(x1,2));
   pointDistorted->y() =  (1 + k1_*pow(r,2) + k2_*pow(r,4)) * x2 + this->p1_*(pow(r,2) + 2*pow(x2,2)) + 2*this->p2_*x1*x2;
 
   return true;
