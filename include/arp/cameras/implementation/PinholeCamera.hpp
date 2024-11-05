@@ -167,15 +167,15 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
 {
   // 1. Project point to unit plane:
   Eigen::Vector2d undistortedPoint;
-  undistortedPoint.x = point.x / point.z;
-  undistortedPoint.y = point.y / point.z;
+  undistortedPoint.x() = point.x() / point.z();
+  undistortedPoint.y() = point.y() / point.z();
 
   // Apply distortion model
   this->distortion_.distort(undistortedPoint, imagePoint);
 
   // Scale and centre
-  imagePoint->x = fu_ * imagePoint->x + cu_;
-  imagePoint->y = fv_ * imagePoint->y + cv_;
+  imagePoint->x() = fu_ * imagePoint->x() + cu_;
+  imagePoint->y() = fv_ * imagePoint->y() + cv_;
 
   //TODO: look at ProjectionStatus
   return ProjectionStatus::Successful;
@@ -205,20 +205,20 @@ bool PinholeCamera<DISTORTION_T>::backProject(
   Eigen::Vector2d distortedPoint;
 
   
-  distortedPoint.x = imagePoint.x - cu_;
-  distortedPoint.y = imagePoint.y - cv_;
+  distortedPoint.x() = imagePoint.x() - cu_;
+  distortedPoint.y() = imagePoint.y() - cv_;
 
-  distortedPoint.x = 1/fu_ * distortedPoint.x;
-  distortedPoint.y = 1/fv_ * distortedPoint.y;
+  distortedPoint.x() = 1/fu_ * distortedPoint.x();
+  distortedPoint.y() = 1/fv_ * distortedPoint.y();
   
   // undistort
   Eigen::Vector2d unDistortedPoint;
   this->distortion_.undistort(distortedPoint, &unDistortedPoint);
 
   // create a vector
-  direction->x = unDistortedPoint.x;
-  direction->y = unDistortedPoint.y; 
-  direction->z = 1; 
+  direction->x() = unDistortedPoint.x();
+  direction->y() = unDistortedPoint.y(); 
+  direction->z() = 1; 
 
   return true;
 }
