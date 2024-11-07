@@ -200,10 +200,9 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   this->distortion_.distort(undistortedPoint, imagePoint, &D);
 
   // scale and centre
-  Eigen::Matrix<double, 2, 2> K {
-    {fu_, 0},
-    {0, fv_},
-  };
+  Eigen::Matrix<double, 2, 2> K;
+  K << fu_, 0,
+       0, fv_;
 
   *pointJacobian = K * D * (*pointJacobian);
   
