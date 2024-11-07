@@ -193,10 +193,11 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   undistortedPoint.y() = point.y() / point.z();
 
   *pointJacobian << 1/point.z(), 0, -point.x()/pow(point.z(), 2),
-                   0, 1/point.z(), -point.y()/pow(point.z(), 2);
+                    0, 1/point.z(), -point.y()/pow(point.z(), 2);
 
   // distortion
-  this->distortion_.distort(undistortedPoint, imagePoint, pointJacobian);
+  Eigen::Matrix2d D;
+  this->distortion_.distort(undistortedPoint, imagePoint, &D);
 
   // scale and centre
   Eigen::Matrix<double, 2, 2> K {
@@ -204,7 +205,7 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     {0, fv_},
   };
 
-  *pointJacobian = K * (*pointJacobian);
+  *pointJacobian = K * D * (*pointJacobian);
   
   //TODO: look at ProjectionStatus
   return ProjectionStatus::Successful;
