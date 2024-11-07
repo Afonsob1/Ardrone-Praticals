@@ -88,10 +88,13 @@ bool RadialTangentialDistortion::distort(
   double x = pointUndistorted.x();
   double y = pointUndistorted.y();
 
-  *pointJacobian << k2_ * pow(pow(x,2) + pow(y,2), 2) + 2*p1_*x*y + 6*p2_*x + x*(2*k1_*x + 4*k2_*x* (pow(x,2) + pow(y,2))) + k1_*(pow(x,2) + pow(y,2)) + 1,
-        2*p1_*x + 2*p2_*y + y*(2*k1_*x*y + 4*k2_*x*y * (pow(x,2) + pow(y,2))),
-      2*p1_*x + 2*p2_*y + x*(2*k1_*x*y + 4*k2_*x*y * (pow(x,2) + pow(y,2))),
-      k2_ * pow((pow(x,2) + pow(y,2)),2) + 6*p1_*y + 2*p2_*x + y*(2*k1_*x*y + 4*k2_*x*y * (pow(x,2) + pow(y,2))) + x*(2*k1_*(pow(x,2)) + 4*k2_*(pow(x,2)) * (pow(x,2) + pow(y,2)) + k1_*(pow(x,2) + pow(y,2)) + 1);
+  this->distort(pointUndistorted, pointDistorted);
+
+  *pointJacobian << 5*k2_*pow(x,4) + 3 * k1_*pow(x,2) + 6*pow(y,2)*k2_*pow(x,2) + k1_*pow(y, 2) + 1 + 2*y*p1_ + 6*p2_*x,
+                  x*(2*k1_*y + 4*k2_*y*(pow(x,2) + pow(y,2))) + 2*x*p1_ + 2*p2_*y,
+                 y * (2 * k1_ * x + 4 * k2_ * x * (pow(x, 2) + pow(y, 2))) + 2 * p1_ * x + 2 * p2_ * y,
+                   5 * k2_ * pow(y, 4) + 3 * k1_ * pow(y, 2) + 6 * pow(x, 2) * k2_ * pow(y, 2) + k1_ * pow(x, 2) + pow(x, 4) * k2_ + 1 + 6 * p1_ * y + 2 * p2_ * x;
+  
 
   return true;
 }

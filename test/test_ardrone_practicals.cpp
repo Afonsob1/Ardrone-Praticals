@@ -9,21 +9,28 @@
 // Test the projection and unprojection
 TEST(PinholeCamera, projectBackProject)
 {
+  
   // create an arbitrary camera model
   arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion> pinholeCamera = 
       arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion>::testObject();
 
+  std::cout << "Random" << std::endl;
   // create a random visible point in the camera coordinate frame C
   auto point_C = pinholeCamera.createRandomVisiblePoint();
 
+
+  std::cout << "project" << std::endl;
   // project
   Eigen::Vector2d imagePoint;
   pinholeCamera.project(point_C,&imagePoint);
 
+  std::cout << "backProject" << std::endl;
   // backProject
   Eigen::Vector3d ray_C;
   pinholeCamera.backProject(imagePoint,&ray_C);
 
+
+  std::cout << "end" << std::endl;
   // now they should align:
   EXPECT_TRUE(fabs(ray_C.normalized().transpose()*point_C.normalized()-1.0)<1.0e-10);
 }
