@@ -70,26 +70,38 @@ bool RadialTangentialDistortion::distort(
     const Eigen::Vector2d & pointUndistorted,
     Eigen::Vector2d * pointDistorted) const
 {
-
   double r = sqrt(pow(pointUndistorted.x(), 2) + pow(pointUndistorted.y(), 2));
 
-  double x1 = pointUndistorted.x();
-  double x2 = pointUndistorted.y();
-   
+  double x = pointUndistorted.x();
+  double y = pointUndistorted.y();
 
-  pointDistorted->x() =  (1 + k1_*pow(r,2) + k2_*pow(r,4)) * x1 + 2*this->p1_*x1*x2 + this->p2_*(pow(r,2) + 2*pow(x1,2));
-  pointDistorted->y() =  (1 + k1_*pow(r,2) + k2_*pow(r,4)) * x2 + this->p1_*(pow(r,2) + 2*pow(x2,2)) + 2*this->p2_*x1*x2;
+  pointDistorted->x() =  (1 + k1_*pow(r,2) + k2_*pow(r,4)) * x + 2*this->p1_*x*y + this->p2_*(pow(r,2) + 2*pow(x,2));
+  pointDistorted->y() =  (1 + k1_*pow(r,2) + k2_*pow(r,4)) * y + this->p1_*(pow(r,2) + 2*pow(y,2)) + 2*this->p2_*x*y;
 
   return true;
-
 }
+
 bool RadialTangentialDistortion::distort(
     const Eigen::Vector2d & pointUndistorted, Eigen::Vector2d * pointDistorted,
     Eigen::Matrix2d * pointJacobian) const
 {
-  // TODO: implement
-  throw std::runtime_error("not implemented");
-  return false;
+  double x = pointUndistorted.x();
+  double y = pointUndistorted.y();
+
+  Eigen::Matrix<double, 2, 2> D {
+    {
+      k2_ * ((x**2 + y**2)**2) + 2*p1_*x*y + 6*p2_*x + x*(2*k1_*x + 4*k2_*x* (x**2 + y**2)) + k1_*(x**2 + y**2) + 1,
+      2*p1_*x + 2*p2_*y + y*(2*k1_*x*y + 4*k2_*x*y * (x**2 + y**2)), 
+    },
+    {
+      2*p1_*x + 2*p2_*y + x*(2*k1_*x*y + 4*k2_*x*y * (x**2 + y**2)),
+      k2_ * (x**2 + y**2)**2 + 6*p1_*y + 2*p2_*x + y*(2*k1_*x*y + 4*k2_*x*y * (x**2 + y**2)) + x*(2*k1_*(x**2) + 4*k2_*(x**2) * (x**2 + y**2) + k1_*(x**2 + y**2) + 1),
+    }
+  }
+
+  *pointJacobian = D * (*pointJacobian);
+
+  return true;
 }
 
 bool RadialTangentialDistortion::undistort(

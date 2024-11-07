@@ -187,9 +187,27 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint,
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
-  // TODO: implement
-  throw std::runtime_error("not implemented");
-  return ProjectionStatus::Invalid;
+  // projection
+  Eigen::Vector2d undistortedPoint;
+  undistortedPoint.x() = point.x() / point.z();
+  undistortedPoint.y() = point.y() / point.z();
+
+  pointJacobian << 1/point.z(), 0, -point.x()/(point.z()**2,
+                   0, 1/point.z(), -point.y()/(point.z()**2);
+
+  // distortion
+  this->distortion_.distort(undistoredPoint, imagePoint, pointJacobian);
+
+  // scale and centre
+  Eigen::Matrix<double, 2, 2> K {
+    {fu_, 0},
+    {0, fv_},
+  }
+
+  *pointJacobian = K * (*pointJacobian);
+  
+  //TODO: look at ProjectionStatus
+  return ProjectionStatus::Successful;
 }
 
 /////////////////////////////////////////
@@ -208,8 +226,8 @@ bool PinholeCamera<DISTORTION_T>::backProject(
   distortedPoint.x() = imagePoint.x() - cu_;
   distortedPoint.y() = imagePoint.y() - cv_;
 
-  distortedPoint.x() = 1/fu_ * distortedPoint.x();
-  distortedPoint.y() = 1/fv_ * distortedPoint.y();
+  distortedPoint.x() = one_over_fu_ * distortedPoint.x();
+  distortedPoint.y() = one_over_fv_ * distortedPoint.y();
   
   // undistort
   Eigen::Vector2d unDistortedPoint;
