@@ -1,6 +1,7 @@
 #include <memory>
 #include <unistd.h>
 #include <stdlib.h>
+#include <chrono>
 
 #include <SDL2/SDL.h>
 
@@ -17,6 +18,8 @@
 #include <std_srvs/Empty.h>
 
 #include <arp/Autopilot.hpp>
+#include <arp/cameras/PinholeCamera.hpp>
+#include <arp/cameras/RadialTangentialDistortion.hpp>
 
 class Subscriber
 {
@@ -52,6 +55,39 @@ class Subscriber
   std::mutex imageMutex_;
 };
 
+/// @brief inicialize camera with camera parameters
+/// @return true on success
+arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion> initCamera(ros::NodeHandle& nh){
+  double fu=0, fv=0, cu=0, cv=0, k1=0, k2=0, p1=0, p2=0;
+  bool success = true;
+  
+  auto getParam = [&nh, &success](const std::string& param_name, double& param_value) {
+      if (!nh.getParam(param_name, param_value)) {
+          ROS_WARN("Failed to get param '%s'", param_name.c_str());
+          success = false;
+      }
+  };
+
+  getParam("arp_node/fu", fu);
+  getParam("arp_node/fv", fv);
+  getParam("arp_node/cu", cu);
+  getParam("arp_node/cv", cv);
+  getParam("arp_node/k1", k1);
+  getParam("arp_node/k2", k2);
+  getParam("arp_node/p1", p1);
+  getParam("arp_node/p2", p2);
+
+  ROS_INFO("Camera parameters:");
+  ROS_INFO("fu: %f, fv: %f ", fu, fv);
+  ROS_INFO("cu: %f, cv: %f ", cu, cv);
+  ROS_INFO("k1: %f, k2: %f ", k1, k2);
+  ROS_INFO("p1: %f, p2: %f ", p1, p2);
+  arp::cameras::RadialTangentialDistortion distortion(k1,k2,p1,p2);
+
+  return arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion>(
+        640, 360, fu, fv, cu, cv, distortion);
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "arp_node");
@@ -81,6 +117,13 @@ int main(int argc, char **argv)
 
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
+
+  // init camera
+  auto camera = initCamera(nh);
+  camera.initialiseUndistortMaps();
+  bool undistorted = false;
+  auto last_time = std::chrono::steady_clock::now();
+
   cv::Mat image;
   auto droneStatus = autopilot.droneStatus();
   while (ros::ok()) {
@@ -94,14 +137,17 @@ int main(int argc, char **argv)
 
     // render image, if there is a new one available
     if(subscriber.getLastImage(image)) {
-
-      // TODO: add overlays to the cv::Mat image, e.g. text
+      if (undistorted){
+        cv::Mat undistortedImg;
+        camera.undistortImage(image, undistortedImg);
+        image = undistortedImg;
+      } 
 
       cv::putText(image, arp::Autopilot::getDroneStatusString(droneStatus), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
       cv::putText(image, std::to_string((int)autopilot.droneBattery()) + "%", cv::Point(560, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
 
       if (droneStatus == arp::Autopilot::DroneStatus::Inited || droneStatus == arp::Autopilot::DroneStatus::Landed) {
-        cv::putText(image, "T", cv::Point(300, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "T: Launch", cv::Point(240, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
       }
 
       if (droneStatus == arp::Autopilot::DroneStatus::Flying || droneStatus == arp::Autopilot::DroneStatus::Hovering || droneStatus == arp::Autopilot::DroneStatus::Flying2) {
@@ -111,6 +157,10 @@ int main(int argc, char **argv)
         cv::putText(image, "   UP   ", cv::Point(480, 320), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
         cv::putText(image, "LF DW RT", cv::Point(480, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
       }
+
+      cv::putText(image, (undistorted?" Undistorted":"Raw Camera"), cv::Point(220, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+      cv::putText(image, "Press C to Change", cv::Point(230, 60), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+
       
       // https://stackoverflow.com/questions/22702630/converting-cvmat-to-sdl-texture
       // I'm using SDL_TEXTUREACCESS_STREAMING because it's for a video player, you should
@@ -199,6 +249,20 @@ int main(int argc, char **argv)
     }
     if (state[SDL_SCANCODE_D]){
       rotateLeft += -1;
+    }
+
+    if (state[SDL_SCANCODE_C]){
+      auto current_time = std::chrono::steady_clock::now();
+      auto time_passed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_time);
+      
+      if(time_passed.count() >= 200){ 
+        // only process the key, if pass more than 200 ms
+
+        undistorted = !undistorted;
+        std::cout << "Undistorted: " << (undistorted?"On":"Off") << std::endl;
+        last_time = current_time;
+      }
+
     }
 
     autopilot.manualMove(forward, left, up, rotateLeft);
