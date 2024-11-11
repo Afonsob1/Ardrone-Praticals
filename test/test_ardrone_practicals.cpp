@@ -22,8 +22,41 @@ TEST(PinholeCamera, projectBackProject)
   std::cout << "project" << std::endl;
   // project
   Eigen::Vector2d imagePoint;
-  pinholeCamera.project(point_C,&imagePoint);
+  Eigen::Matrix<double, 2, 3> pointJacobian;
+  pinholeCamera.project(point_C,&imagePoint, &pointJacobian);
 
+  // numeric diference
+  double delta = 0.001;
+  Eigen::Vector3d temp(point_C);
+  temp.x() = point_C.x() + delta;
+
+  Eigen::Vector2d tempResult;
+
+  pinholeCamera.project(temp,&tempResult);
+
+  tempResult = (tempResult-imagePoint)/delta;
+  EXPECT_TRUE( fabs( tempResult.x() -  pointJacobian(0,0)) < 0.01 );
+  EXPECT_TRUE( fabs( tempResult.y() -  pointJacobian(1,0)) < 0.01 );
+
+  // numeric difference y
+  temp = point_C;
+  temp.y() = point_C.y() + delta;
+  pinholeCamera.project(temp,&tempResult);
+
+  tempResult = (tempResult-imagePoint)/delta;
+  EXPECT_TRUE( fabs( tempResult.x() -  pointJacobian(0,1)) < 0.01 );
+  EXPECT_TRUE( fabs( tempResult.y() -  pointJacobian(1,1)) < 0.01 );
+
+  // numeric difference z
+  temp = point_C;
+  temp.z() = point_C.z() + delta;
+  pinholeCamera.project(temp,&tempResult);
+
+  tempResult = (tempResult-imagePoint)/delta;
+  EXPECT_TRUE( fabs( tempResult.x() -  pointJacobian(0,2)) < 0.01 );
+  EXPECT_TRUE( fabs( tempResult.y() -  pointJacobian(1,2)) < 0.01 );
+
+  
   std::cout << "backProject" << std::endl;
   // backProject
   Eigen::Vector3d ray_C;

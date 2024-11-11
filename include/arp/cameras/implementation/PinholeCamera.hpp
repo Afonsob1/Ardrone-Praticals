@@ -199,6 +199,10 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   Eigen::Matrix2d D;
   this->distortion_.distort(undistortedPoint, imagePoint, &D);
 
+  // Scale and centre
+  imagePoint->x() = fu_ * imagePoint->x() + cu_;
+  imagePoint->y() = fv_ * imagePoint->y() + cv_;
+
   // scale and centre
   Eigen::Matrix<double, 2, 2> K;
   K << fu_, 0,
