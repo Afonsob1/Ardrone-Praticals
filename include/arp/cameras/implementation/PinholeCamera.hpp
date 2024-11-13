@@ -165,7 +165,12 @@ template<class DISTORTION_T>
 ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint) const
 {
-  // 1. Project point to unit plane:
+  // Check if the point is behind the camera
+  if (point.z() <= 0) {
+    return ProjectionStatus::Behind;
+  }
+
+  // Project point to unit plane:
   Eigen::Vector2d undistortedPoint;
   undistortedPoint.x() = point.x() / point.z();
   undistortedPoint.y() = point.y() / point.z();
@@ -177,7 +182,12 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   imagePoint->x() = fu_ * imagePoint->x() + cu_;
   imagePoint->y() = fv_ * imagePoint->y() + cv_;
 
-  //TODO: look at ProjectionStatus
+  // Check if the image point is outside the image bounds
+  if (imagePoint->x() < 0 || imagePoint->x() >= imageWidth() ||
+      imagePoint->y() < 0 || imagePoint->y() >= imageHeight()) {
+    return ProjectionStatus::OutsideImage;
+  }
+
   return ProjectionStatus::Successful;
 }
 
@@ -187,7 +197,12 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint,
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
-  // projection
+  // Check if the point is behind the camera
+  if (point.z() <= 0) {
+    return ProjectionStatus::Behind;
+  }
+
+  // Projection
   Eigen::Vector2d undistortedPoint;
   undistortedPoint.x() = point.x() / point.z();
   undistortedPoint.y() = point.y() / point.z();
@@ -195,7 +210,7 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   *pointJacobian << 1/point.z(), 0, -point.x()/pow(point.z(), 2),
                     0, 1/point.z(), -point.y()/pow(point.z(), 2);
 
-  // distortion
+  // Distortion
   Eigen::Matrix2d D;
   this->distortion_.distort(undistortedPoint, imagePoint, &D);
 
@@ -203,14 +218,18 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   imagePoint->x() = fu_ * imagePoint->x() + cu_;
   imagePoint->y() = fv_ * imagePoint->y() + cv_;
 
-  // scale and centre
+  // Check if the image point is outside the image bounds
+  if (imagePoint->x() < 0 || imagePoint->x() >= imageWidth() ||
+      imagePoint->y() < 0 || imagePoint->y() >= imageHeight()) {
+    return ProjectionStatus::OutsideImage;
+  }
+
   Eigen::Matrix<double, 2, 2> K;
   K << fu_, 0,
        0, fv_;
 
   *pointJacobian = K * D * (*pointJacobian);
   
-  //TODO: look at ProjectionStatus
   return ProjectionStatus::Successful;
 }
 
