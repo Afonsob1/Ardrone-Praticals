@@ -40,6 +40,9 @@
 
 #include <stdexcept>
 
+const float MIN_VALUE = std::numeric_limits<float>::min();
+
+
 // \brief arp Main namespace of this package.
 namespace arp {
 // \brief cameras Namespace for camera-related functionality.
@@ -165,8 +168,13 @@ template<class DISTORTION_T>
 ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint) const
 {
+  
+  if (point.z() < MIN_VALUE && point.z() > -MIN_VALUE ) {
+    return ProjectionStatus::Invalid;
+  }
+
   // Check if the point is behind the camera
-  if (point.z() <= 0) {
+  if (point.z() < 0) {
     return ProjectionStatus::Behind;
   }
 
@@ -183,8 +191,8 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   imagePoint->y() = fv_ * imagePoint->y() + cv_;
 
   // Check if the image point is outside the image bounds
-  if (imagePoint->x() < 0 || imagePoint->x() >= imageWidth() ||
-      imagePoint->y() < 0 || imagePoint->y() >= imageHeight()) {
+  if (imagePoint->x() < 0.0 || imagePoint->x() >= imageWidth() ||
+      imagePoint->y() < 0.0 || imagePoint->y() >= imageHeight()) {
     return ProjectionStatus::OutsideImage;
   }
 
@@ -197,6 +205,11 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint,
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
+
+  if (point.z() < MIN_VALUE && point.z() > -MIN_VALUE ) {
+    return ProjectionStatus::Invalid;
+  }
+
   // Check if the point is behind the camera
   if (point.z() <= 0) {
     return ProjectionStatus::Behind;
