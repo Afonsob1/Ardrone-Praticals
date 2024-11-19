@@ -11,6 +11,18 @@
 namespace arp {
 namespace kinematics {
 
+Eigen::Matrix<double, 15, 15> calculateFc(const RobotState & state_k)
+{
+  Eigen::Matrix<double, 15, 15> Fc;
+
+  Fc.block<3,3>(0, 6) = Eigen::Matrix::Identity();  
+
+  Eigen::Matrix<double, 3, 3> R_WS = state_k.q_WS.toRotationMatrix();
+  Fc.block<3,3>(3, 9) = -R_WS;
+  
+  return Fc;
+}
+
 bool Imu::stateTransition(const RobotState & state_k_minus_1,
                           const ImuMeasurement & z_k_minus_1,
                           const ImuMeasurement & z_k, RobotState & state_k,
@@ -29,6 +41,9 @@ bool Imu::stateTransition(const RobotState & state_k_minus_1,
   }
 
   // TODO: implement trapezoidal integration
+  auto fc_1 = calculateFc(state_k_minus_1);
+
+  std::cout << fc_1 << std::endl;
 
   if (jacobian) {
     // TODO: if requested, impement jacobian of trapezoidal integration with chain rule
