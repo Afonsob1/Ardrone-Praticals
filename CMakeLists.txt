@@ -26,6 +26,43 @@ INCLUDE(FindPkgConfig)
 PKG_SEARCH_MODULE(SDL2 REQUIRED sdl2)
 #PKG_SEARCH_MODULE(SDL2_image REQUIRED sdl2_image)
 
+## BRISK 2 import
+include(ExternalProject)
+include_directories(${CMAKE_BINARY_DIR}/include)
+link_directories(${CMAKE_BINARY_DIR}/lib)
+if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "arm*")
+  message(STATUS "ARM processor detected, will attempt to use NEON.")
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ARM_NEON__")
+  add_definitions(-D__ARM_NEON__ -flax-vector-conversions) # for BRISK
+else()
+  message(STATUS "Assuming SSE instructions available.")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+endif()
+ExternalProject_Add(brisk_external
+  GIT_REPOSITORY "git@github.com:smartroboticslab/brisk.git"
+  GIT_TAG "origin/main"
+  INSTALL_DIR ${CMAKE_BINARY_DIR}
+  CMAKE_ARGS -DCUDA_USE_STATIC_CUDA_RUNTIME=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/brisk
+  BUILD_IN_SOURCE 0
+  BUILD_COMMAND make -j${N_CORES}
+  INSTALL_COMMAND make install
+)
+add_library(brisk STATIC IMPORTED)
+add_library(agast STATIC IMPORTED)
+set(BRISK_LIBRARIES brisk agast)
+set_target_properties(brisk PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libbrisk.a)
+set_target_properties(agast PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libagast.a)
+add_dependencies(brisk brisk_external)
+add_dependencies(agast brisk_external)
+# install it once built
+install(FILES ${CMAKE_BINARY_DIR}/lib/libbrisk.a ${CMAKE_BINARY_DIR}/lib/libagast.a
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+ install(DIRECTORY ${CMAKE_BINARY_DIR}/include/brisk/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/brisk/)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/lib/CMake/brisk/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/CMake/brisk/)
+
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -134,14 +171,25 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
    src/CameraBase.cpp
+   src/Frontend.cpp
+   src/Imu.cpp
+   src/ViEkf.cpp
+)
+add_dependencies(${PROJECT_NAME} brisk agast)
+target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${BRISK_LIBRARIES}
 )
 
 add_library(${PROJECT_NAME}_autopilot
    src/Autopilot.cpp
+   src/VisualInertialTracker.cpp
 )
 target_link_libraries(${PROJECT_NAME}_autopilot
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${PROJECT_NAME}
 )
 
 ## Add cmake target dependencies of the library
@@ -164,6 +212,7 @@ target_link_libraries(arp_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${SDL2_LIBRARIES}
+  ${BRISK_LIBRARIES}
 )
 
 #############
@@ -206,7 +255,10 @@ target_link_libraries(arp_node
 #############
 
 if(CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(${PROJECT_NAME}_test test/test_ardrone_practicals.cpp)
+  catkin_add_gtest(${PROJECT_NAME}_test 
+    test/test_ardrone_practicals.cpp
+    test/test_ardrone_practical_3.cpp
+  )
   target_link_libraries(${PROJECT_NAME}_test 
     ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
