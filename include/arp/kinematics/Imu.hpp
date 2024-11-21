@@ -15,6 +15,25 @@ struct RobotState {
   Eigen::Vector3d v_W;  ///< The velocity expressed in W frame.
   Eigen::Vector3d b_g;  ///< The gyro bias.
   Eigen::Vector3d b_a;  ///< The accelerometer bias.
+
+  RobotState(){}
+  RobotState(Eigen::Vector3d t_WS, Eigen::Quaterniond q_WS, Eigen::Vector3d v_W, Eigen::Vector3d b_g, Eigen::Vector3d b_a) : 
+                        t_WS(t_WS), q_WS(q_WS), v_W(v_W), b_g(b_g), b_a(b_a) {}
+
+  RobotState operator+(const RobotState& other) const {
+    RobotState r;
+    r.t_WS = t_WS + other.t_WS;
+    r.q_WS = other.q_WS * q_WS;
+    r.v_W = v_W + other.v_W;
+    r.b_g = b_g + other.b_g;
+    r.b_a = b_a + other.b_a;
+    return r;
+  }
+
+  friend RobotState operator*(double scalar, const RobotState& state) {
+    return RobotState(state.t_WS * scalar, state.q_WS // todo the multiplication
+        , state.v_W * scalar, state.b_g*scalar, state.b_a*scalar);
+  }
 };
 
 typedef Eigen::Matrix<double,15,15> ImuKinematicsJacobian;
