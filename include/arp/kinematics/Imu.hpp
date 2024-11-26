@@ -20,20 +20,16 @@ struct RobotState {
   RobotState(Eigen::Vector3d t_WS, Eigen::Quaterniond q_WS, Eigen::Vector3d v_W, Eigen::Vector3d b_g, Eigen::Vector3d b_a) : 
                         t_WS(t_WS), q_WS(q_WS), v_W(v_W), b_g(b_g), b_a(b_a) {}
 
-  RobotState operator+(const RobotState& other) const {
+  RobotState operator+(const RobotState& d_chi) const {
     RobotState r;
-    r.t_WS = t_WS + other.t_WS;
-    r.q_WS = other.q_WS * q_WS;
-    r.v_W = v_W + other.v_W;
-    r.b_g = b_g + other.b_g;
-    r.b_a = b_a + other.b_a;
+    r.t_WS = t_WS + d_chi.t_WS;
+    r.q_WS = d_chi.q_WS* q_WS;
+    r.v_W = v_W + d_chi.v_W;
+    r.b_g = b_g + d_chi.b_g;
+    r.b_a = b_a + d_chi.b_a;
     return r;
   }
 
-  friend RobotState operator*(double scalar, const RobotState& state) {
-    return RobotState(state.t_WS * scalar, state.q_WS // todo the multiplication
-        , state.v_W * scalar, state.b_g*scalar, state.b_a*scalar);
-  }
 };
 
 typedef Eigen::Matrix<double,15,15> ImuKinematicsJacobian;
@@ -67,6 +63,7 @@ class Imu
                               const ImuMeasurement & z_k_minus_1,
                               const ImuMeasurement & z_k, RobotState & state_k,
                               ImuKinematicsJacobian* jacobian = nullptr);
+
 };
 
 }

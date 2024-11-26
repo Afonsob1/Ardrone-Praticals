@@ -14,7 +14,7 @@ namespace kinematics {
 Eigen::Matrix<double, 15, 15> calculate_fc(const RobotState & state_k, const ImuMeasurement & z_k){
   Eigen::Matrix<double, 3, 3> R_WS = state_k.q_WS.toRotationMatrix();
 
-  Eigen::Matrix<double, 15, 15> Fc;
+  Eigen::Matrix<double, 15, 15> Fc = Eigen::Matrix<double, 15, 15>::Zero();
   Fc.block<3,3>(0, 6) = Eigen::Matrix3d::Identity();  
   Fc.block<3,3>(3, 9) = -R_WS;
   Fc.block<3,3>(6, 3) = -arp::kinematics::crossMx(R_WS * (z_k.acc_S - state_k.b_a));
@@ -23,31 +23,22 @@ Eigen::Matrix<double, 15, 15> calculate_fc(const RobotState & state_k, const Imu
   return Fc;
 }
 
-RobotState calculate_d_chi( const double dt,
+RobotState calculate_d_chi(const double dt,
                             const RobotState & state_k, 
                             const ImuMeasurement & z_k)
 {
   Eigen::Matrix<double, 15, 15> Fc = calculate_fc(state_k, z_k);
 
-  Eigen::VectorXd x(15);
-  x.segment<3>(0) = state_k.t_WS;
-  x.segment<3>(3) = Eigen::Vector3d::Zero();
-  x.segment<3>(6) = state_k.v_W;
-  x.segment<3>(9) = state_k.b_g;
-  x.segment<3>(12) = state_k.b_a;
+  auto R = state_k.q_WS.toRotationMatrix();
+  RobotState result;
+  result.t_WS = dt*state_k.v_W;
+  result.q_WS =  arp::kinematics::deltaQ(dt*R*(z_k.omega_S - state_k.b_g));
+  result.v_W = dt*(R * (z_k.acc_S - state_k.b_a)   + Eigen::Vector3d(0,0,-9.81));
+  result.b_g = Eigen::Vector3d::Zero();
+  result.b_a = Eigen::Vector3d::Zero();
 
-  auto d_chi = dt * Fc * x;
-
-  RobotState state;
-  state.t_WS = d_chi.segment<3>(0);
-  state.q_WS = arp::kinematics::deltaQ(d_chi.segment<3>(3));
-  state.v_W = d_chi.segment<3>(6);
-  state.b_g = d_chi.segment<3>(9);
-  state.b_a = d_chi.segment<3>(12);
-
-  return state;
+  return result;
 }
-
 
 bool Imu::stateTransition(const RobotState & state_k_minus_1,
                           const ImuMeasurement & z_k_minus_1,
@@ -66,22 +57,30 @@ bool Imu::stateTransition(const RobotState & state_k_minus_1,
     return false;  // negative, no or too large time increments not permitted
   }
 
-  // TODO: implement trapezoidal integration
   auto d_chi_1 = calculate_d_chi(dt, state_k_minus_1, z_k_minus_1);
-  auto sum_state_k_minus_1_chi_1 = state_k_minus_1 + d_chi_1;
+  Eigen::Vector3d angle_1 = dt*state_k_minus_1.q_WS.toRotationMatrix()*(z_k_minus_1.omega_S - state_k_minus_1.b_g);
+
+  RobotState sum_state_k_minus_1_chi_1 = state_k_minus_1 + d_chi_1;
+
   auto d_chi_2 = calculate_d_chi(dt, sum_state_k_minus_1_chi_1, z_k);
-  state_k = state_k_minus_1 + 1/2 * (d_chi_1 + d_chi_2);
-  
+  Eigen::Vector3d angle_2 = dt*sum_state_k_minus_1_chi_1.q_WS.toRotationMatrix()*(z_k.omega_S - state_k_minus_1.b_g);
+
+  state_k.t_WS = state_k_minus_1.t_WS + (d_chi_1.t_WS + d_chi_2.t_WS)/2.0;
+  state_k.q_WS = arp::kinematics::deltaQ( (angle_1 + angle_2 )/2.0) * state_k_minus_1.q_WS ;
+  state_k.v_W = state_k_minus_1.v_W + (d_chi_1.v_W + d_chi_2.v_W)/2.0;
+  state_k.b_g = state_k_minus_1.b_g;
+  state_k.b_a = state_k_minus_1.b_a;
+
   if (jacobian) {
     Eigen::Matrix<double, 15, 15> I = Eigen::Matrix<double, 15, 15>::Identity();
     Eigen::Matrix<double, 15, 15> Fc_minus_1 = calculate_fc(state_k_minus_1, z_k_minus_1);
     Eigen::Matrix<double, 15, 15> Fc_minus_1_d_chi_1 = calculate_fc(sum_state_k_minus_1_chi_1, z_k);
 
-    *jacobian = I + dt/2.0 * Fc_minus_1 + dt/2.0 * (Fc_minus_1_d_chi_1 * (I + dt * Fc_minus_1));
+    *jacobian = I + 0.5 * dt * Fc_minus_1 + 0.5 * dt * (Fc_minus_1_d_chi_1 * (I + dt * Fc_minus_1));
   }
+
   return true;
 }
 
 }
 }  // namespace arp
-
