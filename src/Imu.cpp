@@ -58,15 +58,13 @@ bool Imu::stateTransition(const RobotState & state_k_minus_1,
   }
 
   auto d_chi_1 = calculate_d_chi(dt, state_k_minus_1, z_k_minus_1);
-  Eigen::Vector3d angle_1 = dt*state_k_minus_1.q_WS.toRotationMatrix()*(z_k_minus_1.omega_S - state_k_minus_1.b_g);
 
   RobotState sum_state_k_minus_1_chi_1 = state_k_minus_1 + d_chi_1;
 
   auto d_chi_2 = calculate_d_chi(dt, sum_state_k_minus_1_chi_1, z_k);
-  Eigen::Vector3d angle_2 = dt*sum_state_k_minus_1_chi_1.q_WS.toRotationMatrix()*(z_k.omega_S - state_k_minus_1.b_g);
 
   state_k.t_WS = state_k_minus_1.t_WS + (d_chi_1.t_WS + d_chi_2.t_WS)/2.0;
-  state_k.q_WS = arp::kinematics::deltaQ( (angle_1 + angle_2 )/2.0) * state_k_minus_1.q_WS ;
+  state_k.q_WS = Eigen::Quaterniond( (d_chi_1.q_WS.coeffs() + d_chi_2.q_WS.coeffs())/2.0 ) * state_k_minus_1.q_WS ;
   state_k.v_W = state_k_minus_1.v_W + (d_chi_1.v_W + d_chi_2.v_W)/2.0;
   state_k.b_g = state_k_minus_1.b_g;
   state_k.b_a = state_k_minus_1.b_a;
