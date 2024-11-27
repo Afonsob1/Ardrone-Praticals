@@ -189,10 +189,10 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
 
     // process noise matrix:
 
-    Eigen::Matrix<double, 3, 3> sig_cg_squared_delta_t = sigma_c_gyr_**2 * delta_t * Eigen::Matrix3d::Identity();
-    Eigen::Matrix<double, 3, 3> sig_ca_squared_delta_t = sigma_c_acc_**2 * delta_t * Eigen::Matrix3d::Identity();
-    Eigen::Matrix<double, 3, 3> sig_cbg_squared_delta_t = sigma_c_gw_**2 * delta_t * Eigen::Matrix3d::Identity();
-    Eigen::Matrix<double, 3, 3> sig_cba_squared_delta_t = sigma_c_aw_**2 * delta_t * Eigen::Matrix3d::Identity();
+    Eigen::Matrix<double, 3, 3> sig_cg_squared_delta_t = pow(sigma_c_gyr_, 2) * delta_t * Eigen::Matrix3d::Identity();
+    Eigen::Matrix<double, 3, 3> sig_ca_squared_delta_t = pow(sigma_c_acc_, 2) * delta_t * Eigen::Matrix3d::Identity();
+    Eigen::Matrix<double, 3, 3> sig_cbg_squared_delta_t = pow(sigma_c_gw_, 2) * delta_t * Eigen::Matrix3d::Identity();
+    Eigen::Matrix<double, 3, 3> sig_cba_squared_delta_t = pow(sigma_c_aw_, 2) * delta_t * Eigen::Matrix3d::Identity();
 
     Eigen::Matrix<double, 15, 15> LQLt = Eigen::Matrix<double, 15, 15>::Zero();
     LQLt.block<3,3>(3, 3) = sig_cg_squared_delta_t;
