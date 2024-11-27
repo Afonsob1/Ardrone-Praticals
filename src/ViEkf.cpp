@@ -173,15 +173,38 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
     // get the time delta
     const double delta_t = double(z_k.timestampMicroseconds - z_k_minus_1.timestampMicroseconds) * 1.0e-6;
 
-    // TODO: propagate robot state x_ using IMU measurements
+    // propagate robot state x_ using IMU measurements
     // i.e. we do x_k = f(x_k_minus_1).
     // Also, we compute the matrix F (linearisation of f()) related to
     // delta_chi_k = F * delta_chi_k_minus_1.
+    kinematics::RobotState x_k_minus_1 = x_propagated_;
+    kinematics::RobotState x_k;
+    kinematics::ImuKinematicsJacobian F = kinematics::ImuKinematicsJacobian::Identity();
+    if (!arp::kinematics::Imu::stateTransition(x_k_minus_1, z_k_minus_1, z_k, x_k, &F)) {
+      return false;  // failed to propagate state
+    }
 
-    // TODO: propagate covariance matrix P_
+    // update the current state with the propagated state
+    x_ = x_k;
 
+    // process noise matrix:
+
+    Eigen::Matrix<double, 3, 3> sig_cg_squared_delta_t = sigma_c_gyr_**2 * delta_t * Eigen::Matrix3d::Identity();
+    Eigen::Matrix<double, 3, 3> sig_ca_squared_delta_t = sigma_c_acc_**2 * delta_t * Eigen::Matrix3d::Identity();
+    Eigen::Matrix<double, 3, 3> sig_cbg_squared_delta_t = sigma_c_gw_**2 * delta_t * Eigen::Matrix3d::Identity();
+    Eigen::Matrix<double, 3, 3> sig_cba_squared_delta_t = sigma_c_aw_**2 * delta_t * Eigen::Matrix3d::Identity();
+
+    Eigen::Matrix<double, 15, 15> LQLt = Eigen::Matrix<double, 15, 15>::Zero();
+    LQLt.block<3,3>(3, 3) = sig_cg_squared_delta_t;
+    LQLt.block<3,3>(6, 6) = sig_ca_squared_delta_t;
+    LQLt.block<3,3>(9, 9) = sig_cbg_squared_delta_t;
+    LQLt.block<3,3>(12, 12) = sig_cba_squared_delta_t;
+
+    // propagate covariance matrix P_
+    P_ = F * P_ * F.transpose() + LQLt;
   }
-  return false;  // TODO: change to true once implemented
+
+  return true;
 }
 
 // Pass a set of keypoint measurements to trigger an update.
