@@ -187,6 +187,9 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
     // update the current state with the propagated state
     x_ = x_k;
 
+    // normalize quaternion to ensure it remains a unit quaternion
+    x_.q_WS.normalize();
+
     // process noise matrix:
 
     Eigen::Matrix<double, 3, 3> sig_cg_squared_delta_t = pow(sigma_c_gyr_, 2) * delta_t * Eigen::Matrix3d::Identity();

@@ -33,6 +33,7 @@ RobotState calculate_d_chi(const double dt,
   RobotState result;
   result.t_WS = dt*state_k.v_W;
   result.q_WS = arp::kinematics::deltaQ(dt*R*(z_k.omega_S - state_k.b_g));
+  result.q_WS.normalize(); // normalize quaternion after updating to ensure numerical stability
   result.v_W = dt*(R * (z_k.acc_S - state_k.b_a) + Eigen::Vector3d(0,0,-9.81));
   result.b_g = Eigen::Vector3d::Zero();
   result.b_a = Eigen::Vector3d::Zero();
@@ -63,7 +64,8 @@ bool Imu::stateTransition(const RobotState & state_k_minus_1,
   auto d_chi_2 = calculate_d_chi(dt, sum_state_k_minus_1_chi_1, z_k);
 
   state_k.t_WS = state_k_minus_1.t_WS + (d_chi_1.t_WS + d_chi_2.t_WS) * 0.5;
-  state_k.q_WS = Eigen::Quaterniond( (d_chi_1.q_WS.coeffs() + d_chi_2.q_WS.coeffs()) * 0.5 ) * state_k_minus_1.q_WS ;
+  state_k.q_WS = Eigen::Quaterniond( (d_chi_1.q_WS.coeffs() + d_chi_2.q_WS.coeffs()) * 0.5 ) * state_k_minus_1.q_WS;
+  state_k.q_WS.normalize(); // normalize quaternion after updating to ensure numerical stability
   state_k.v_W = state_k_minus_1.v_W + (d_chi_1.v_W + d_chi_2.v_W) * 0.5;
   state_k.b_g = state_k_minus_1.b_g;
   state_k.b_a = state_k_minus_1.b_a;
