@@ -177,21 +177,15 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
     // i.e. we do x_k = f(x_k_minus_1).
     // Also, we compute the matrix F (linearisation of f()) related to
     // delta_chi_k = F * delta_chi_k_minus_1.
-    kinematics::RobotState x_k_minus_1 = x_propagated_;
-    kinematics::RobotState x_k;
     kinematics::ImuKinematicsJacobian F = kinematics::ImuKinematicsJacobian::Identity();
-    if (!arp::kinematics::Imu::stateTransition(x_k_minus_1, z_k_minus_1, z_k, x_k, &F)) {
+    if (!arp::kinematics::Imu::stateTransition(x_, z_k_minus_1, z_k, x_, &F)) {
       return false;  // failed to propagate state
     }
 
     // update the current state with the propagated state
-    x_ = x_k;
-
-    // normalize quaternion to ensure it remains a unit quaternion
-    x_.q_WS.normalize();
+    x_.q_WS.normalize(); // normalize quaternion to ensure it remains a unit quaternion
 
     // process noise matrix:
-
     Eigen::Matrix<double, 3, 3> sig_cg_squared_delta_t = pow(sigma_c_gyr_, 2) * delta_t * Eigen::Matrix3d::Identity();
     Eigen::Matrix<double, 3, 3> sig_ca_squared_delta_t = pow(sigma_c_acc_, 2) * delta_t * Eigen::Matrix3d::Identity();
     Eigen::Matrix<double, 3, 3> sig_cbg_squared_delta_t = pow(sigma_c_gw_, 2) * delta_t * Eigen::Matrix3d::Identity();
