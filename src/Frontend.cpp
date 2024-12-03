@@ -230,7 +230,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   cv::Mat descriptors;
   detectAndDescribe(grayScale, extractionDirection, keypoints, descriptors);
 
-  // TODO match to map:
+  // match to map:
   const int numPosesToMatch = 3;
   int checkedPoses = 0;
   for(const auto& lms : landmarks_) { // go through all poses
@@ -239,7 +239,12 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
         uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
         const float dist = brisk::Hamming::PopcntofXORed(
               keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
-        // TODO check if a match and process accordingly
+        // check if a match and process accordingly
+        if (dist < 60.0) {
+          const cv::KeyPoint& cvKeypoint = keypoints[k];
+          Eigen::Vector2d keypoint(cvKeypoint.pt.x, cvKeypoint.pt.y);
+          detections.push_back(Detection(keypoint, lm.point, lm.landmarkId));
+        }
       }
     }
     checkedPoses++;
@@ -248,13 +253,33 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     }
   }
 
-  // TODO run RANSAC (to remove outliers and get pose T_CW estimate)
+  // run RANSAC (to remove outliers and get pose T_CW estimate)
+  std::vector<cv::Point3d> worldPoints;
+  std::vector<cv::Point2d> imagePoints;
+  for (const auto& detection : detections) {
+      worldPoints.emplace_back(detection.landmark.x(), detection.landmark.y(), detection.landmark.z());
+      imagePoints.emplace_back(detection.keypoint.x(), detection.keypoint.y());
+  }
+  std::vector<int>& inliers;
+  bool isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers)
+  if (!isRansacSuccess) return false;
 
-  // TODO set detections
+  // set detections:
+  DetectionVec filteredDetections;
+  for (int index : inliers) {
+      filteredDetections.push_back(detections[index]);
+  }
+  detections = std::move(filteredDetections);
 
-  // TODO visualise by painting stuff into visualisationImage
-  
-  return false; // TODO return true if successful...
+  // visualise by painting stuff into visualisationImage:
+  visualisationImage = image.clone();
+  for(const auto& detection : detections) {
+    cv::circle(visualisationImage,
+                cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
+                3, cv::Scalar(255,0,0), -1, CV_AA);
+  }
+
+  return true;
 }
 
 }  // namespace arp
