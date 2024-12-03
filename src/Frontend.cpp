@@ -243,7 +243,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
         if (dist < 60.0) {
           const cv::KeyPoint& cvKeypoint = keypoints[k];
           Eigen::Vector2d keypoint(cvKeypoint.pt.x, cvKeypoint.pt.y);
-          detections.push_back(Detection(keypoint, lm.point, lm.landmarkId));
+          detections.push_back(arp::Detection {keypoint, lm.point, lm.landmarkId});
         }
       }
     }
@@ -260,8 +260,8 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
       worldPoints.emplace_back(detection.landmark.x(), detection.landmark.y(), detection.landmark.z());
       imagePoints.emplace_back(detection.keypoint.x(), detection.keypoint.y());
   }
-  std::vector<int>& inliers;
-  bool isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers)
+  std::vector<int> inliers;
+  bool isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
   if (!isRansacSuccess) return false;
 
   // set detections:
