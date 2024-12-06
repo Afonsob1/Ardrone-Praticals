@@ -257,11 +257,8 @@ bool PinholeCamera<DISTORTION_T>::backProject(
 
   // change to unit plane
   Eigen::Vector2d distortedPoint;
-
-  
   distortedPoint.x() = imagePoint.x() - cu_;
   distortedPoint.y() = imagePoint.y() - cv_;
-
   distortedPoint.x() = one_over_fu_ * distortedPoint.x();
   distortedPoint.y() = one_over_fv_ * distortedPoint.y();
   

@@ -234,6 +234,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   const int numPosesToMatch = 3;
   int checkedPoses = 0;
   for(const auto& lms : landmarks_) { // go through all poses
+    bool matchKeyPoint = false;
     for(const auto& lm : lms.second) { // go through all landmarks seen from this pose
       for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
         uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
@@ -241,16 +242,20 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
               keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
         // check if a match and process accordingly
         if (dist < 60.0) {
+          matchKeyPoint = true;
           const cv::KeyPoint& cvKeypoint = keypoints[k];
           Eigen::Vector2d keypoint(cvKeypoint.pt.x, cvKeypoint.pt.y);
           detections.push_back(arp::Detection {keypoint, lm.point, lm.landmarkId});
         }
       }
     }
-    checkedPoses++;
+
+    if (matchKeyPoint) checkedPoses++;
+    
     if(checkedPoses>=numPosesToMatch) {
       break;
     }
+    
   }
 
   // run RANSAC (to remove outliers and get pose T_CW estimate)
@@ -276,7 +281,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   for(const auto& detection : detections) {
     cv::circle(visualisationImage,
                 cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
-                3, cv::Scalar(255,0,0), -1, CV_AA);
+                3, cv::Scalar(0,0,255), -1, CV_AA);
   }
 
   return true;

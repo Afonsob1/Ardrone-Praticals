@@ -200,7 +200,7 @@ int main(int argc, char **argv)
     }
 
     // render image, if there is a new one available
-    if(subscriber.getLastImage(image)) {
+    if(visualInertialTracker.getLastVisualisationImage(image)) {
       if (undistorted){
         cv::Mat undistortedImg;
         camera.undistortImage(image, undistortedImg);

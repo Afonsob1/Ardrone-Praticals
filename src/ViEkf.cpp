@@ -280,21 +280,34 @@ bool ViEkf::update(const Detection & detection){
   // TODO: transform the corner point from world frame into the camera frame
   // (remember the camera projection will assume the point is represented
   // in camera coordinates):
+  Eigen::Vector4d hp_C = T_SC_.inverse() * T_WS.inverse() * hp_W;
+
+  std::cout << "hp_C=" << hp_C << std::endl;
+
 
   // TODO: calculate the reprojection error y (residual)
   // using the PinholeCamera::project
-  const Eigen::Vector2d y;  // = TODO
+  Eigen::Vector2d reprojection_point;
+  Eigen::Matrix<double, 2, 3> U;
 
   // TODO: check validity of projection -- return false if not successful!
+  if (cameraModel_.project(hp_C.segment<3>(0), &reprojection_point, &U) != cameras::ProjectionStatus::Successful){
+    return false;
+  }
+  
+  const Eigen::Vector2d y = detection.keypoint - reprojection_point;
 
   // TODO: calculate measurement Jacobian H
+  Eigen::Matrix<double, 2, 15> H = Eigen::Matrix<double, 2, 15>::Zero();
+  H.block<2,3>(0, 0) = U * T_SC_.R().transpose() * (-T_WS.R().transpose());
+  H.block<2,3>(0, 3) = U * T_SC_.R().transpose() * T_WS.R().transpose() * arp::kinematics::crossMx(hp_W.head<3>() - x_.t_WS);
 
   // Obtain the measurement covariance form parameters:
   const double r = sigma_imagePoint_ * sigma_imagePoint_;
   Eigen::Matrix2d R = Eigen::Vector2d(r, r).asDiagonal();  // the measurement covariance
 
   // TODO: compute residual covariance S
-  Eigen::Matrix2d S;  // = TODO
+  Eigen::Matrix2d S = H * P_ * H.transpose() + R;
 
   // chi2 test
   if(y.transpose()*S.inverse()*y > 40.0){
@@ -302,15 +315,24 @@ bool ViEkf::update(const Detection & detection){
     return false;
   }
 
-  // TODO: compute Kalman gain K
+  // TODO: compute Kalman gain K 15x2
+  Eigen::Matrix<double, 15, 2> K = P_ * H.transpose() * S.inverse();
 
   // TODO: compute increment Delta_chi
+  Eigen::Matrix<double, 15, 1> delta_chi = K * y; 
+  Eigen::Vector3d dAlpha = delta_chi.segment<3>(3);
 
   // TODO: perform update. Note: multiplicative for the quaternion!!
+  x_.t_WS += delta_chi.segment<3>(0);
+  x_.q_WS = kinematics::deltaQ(dAlpha) * x_.q_WS;
+  x_.v_W += delta_chi.segment<3>(6);
+  x_.b_g += delta_chi.segment<3>(9);
+  x_.b_a += delta_chi.segment<3>(12);
 
   // TODO: update to covariance matrix:
+  P_ = (Eigen::Matrix<double, 15, 15>::Identity() - K * H) * P_;
 
-  return false;  // TODO: change to true once implemented...
+  return true;
 }
 
 }  // namespace arp
