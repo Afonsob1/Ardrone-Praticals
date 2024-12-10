@@ -168,16 +168,6 @@ template<class DISTORTION_T>
 ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint) const
 {
-  
-  if (point.z() < MIN_VALUE && point.z() > -MIN_VALUE ) {
-    return ProjectionStatus::Invalid;
-  }
-
-  // Check if the point is behind the camera
-  if (point.z() < 0) {
-    return ProjectionStatus::Behind;
-  }
-
   // Project point to unit plane:
   Eigen::Vector2d undistortedPoint;
   undistortedPoint.x() = point.x() / point.z();
@@ -191,9 +181,18 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   imagePoint->y() = fv_ * imagePoint->y() + cv_;
 
   // Check if the image point is outside the image bounds
-  if (imagePoint->x() < 0.0 || imagePoint->x() >= imageWidth() ||
-      imagePoint->y() < 0.0 || imagePoint->y() >= imageHeight()) {
+  if (!isInImage(*imagePoint)) {
     return ProjectionStatus::OutsideImage;
+  }
+
+  // Check if the point is behind the camera
+  if (point.z() < 0) {
+    return ProjectionStatus::Behind;
+  }
+  
+  // Check if the point is invalid
+  if (point.z() < MIN_VALUE && point.z() > -MIN_VALUE ) {
+    return ProjectionStatus::Invalid;
   }
 
   return ProjectionStatus::Successful;
@@ -205,15 +204,6 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint,
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
-
-  if (point.z() < MIN_VALUE && point.z() > -MIN_VALUE ) {
-    return ProjectionStatus::Invalid;
-  }
-
-  // Check if the point is behind the camera
-  if (point.z() <= 0) {
-    return ProjectionStatus::Behind;
-  }
 
   // Projection
   Eigen::Vector2d undistortedPoint;
@@ -231,17 +221,26 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   imagePoint->x() = fu_ * imagePoint->x() + cu_;
   imagePoint->y() = fv_ * imagePoint->y() + cv_;
 
-  // Check if the image point is outside the image bounds
-  if (imagePoint->x() < 0 || imagePoint->x() >= imageWidth() ||
-      imagePoint->y() < 0 || imagePoint->y() >= imageHeight()) {
-    return ProjectionStatus::OutsideImage;
-  }
-
   Eigen::Matrix<double, 2, 2> K;
   K << fu_, 0,
        0, fv_;
 
   *pointJacobian = K * D * (*pointJacobian);
+
+  // Check if the image point is outside the image bounds
+  if (!isInImage(*imagePoint)) {
+    return ProjectionStatus::OutsideImage;
+  }
+
+  // Check if the point is behind the camera
+  if (point.z() < 0) {
+    return ProjectionStatus::Behind;
+  }
+
+  // Check if the point is invalid
+  if (point.z() < MIN_VALUE && point.z() > -MIN_VALUE ) {
+    return ProjectionStatus::Invalid;
+  }
   
   return ProjectionStatus::Successful;
 }
@@ -254,13 +253,10 @@ template<class DISTORTION_T>
 bool PinholeCamera<DISTORTION_T>::backProject(
     const Eigen::Vector2d & imagePoint, Eigen::Vector3d * direction) const
 {
-
   // change to unit plane
   Eigen::Vector2d distortedPoint;
-  distortedPoint.x() = imagePoint.x() - cu_;
-  distortedPoint.y() = imagePoint.y() - cv_;
-  distortedPoint.x() = one_over_fu_ * distortedPoint.x();
-  distortedPoint.y() = one_over_fv_ * distortedPoint.y();
+  distortedPoint.x() = one_over_fu_ * (imagePoint.x() - cu_);
+  distortedPoint.y() = one_over_fv_ * (imagePoint.y() - cv_);
   
   // undistort
   Eigen::Vector2d unDistortedPoint;
@@ -273,7 +269,6 @@ bool PinholeCamera<DISTORTION_T>::backProject(
 
   return true;
 }
-
 
 }  // namespace cameras
 }  // namespace arp
