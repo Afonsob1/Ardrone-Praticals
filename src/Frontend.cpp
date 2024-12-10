@@ -250,7 +250,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
       }
     }
 
-    if (matchKeyPoint) checkedPoses++;
+    checkedPoses++;
     
     if(checkedPoses>=numPosesToMatch) {
       break;
@@ -279,6 +279,13 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
 
   // visualise by painting stuff into visualisationImage:
   visualisationImage = image.clone();
+  
+  for(const auto& point : imagePoints) {
+    cv::circle(visualisationImage,
+                point,
+                3, cv::Scalar(255,0,0), -1, CV_AA);
+  }
+  
   for(const auto& detection : detections) {
     cv::circle(visualisationImage,
                 cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),

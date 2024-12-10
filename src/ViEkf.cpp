@@ -178,12 +178,12 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
     // Also, we compute the matrix F (linearisation of f()) related to
     // delta_chi_k = F * delta_chi_k_minus_1.
     kinematics::ImuKinematicsJacobian F = kinematics::ImuKinematicsJacobian::Identity();
-    if (!arp::kinematics::Imu::stateTransition(x_, z_k_minus_1, z_k, x_, &F)) {
+    if (!arp::kinematics::Imu::stateTransition(x_, z_k_minus_1, z_k, x_propagated_, &F)) {
       return false;  // failed to propagate state
     }
+    x_propagated_.q_WS.normalize();
+    x_ = x_propagated_; 
 
-    // update the current state with the propagated state
-    x_.q_WS.normalize(); // normalize quaternion to ensure it remains a unit quaternion
 
     // process noise matrix:
     Eigen::Matrix<double, 3, 3> sig_cg_squared_delta_t = pow(sigma_c_gyr_, 2) * delta_t * Eigen::Matrix3d::Identity();

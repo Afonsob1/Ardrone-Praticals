@@ -62,7 +62,7 @@ class Subscriber
         + msg->header.stamp.nsec / 1000;
     Eigen::Vector3d acc(msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
     Eigen::Vector3d angular(msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
-    tracker->addImuMeasurement(timeMicroseconds, acc, angular);
+    tracker->addImuMeasurement(timeMicroseconds, angular, acc );
 
     
   }
