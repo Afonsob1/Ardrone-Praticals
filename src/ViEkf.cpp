@@ -211,8 +211,6 @@ bool ViEkf::addKeypointMeasurements(uint64_t timestampMicroseconds,
   // let's do the propagation from last time to now:
   predict(timestampLastUpdateMicrosec_, timestampMicroseconds);
 
-  std::out << detectionVec.size() << " detections" << std::endl;
-
   // now we are ready to do the actual update
   int successes = 0;
   for(size_t k=0; k<detectionVec.size(); ++k){
@@ -284,7 +282,7 @@ bool ViEkf::update(const Detection & detection){
   // in camera coordinates):
 
   
-  std::cout << "hp_W=" << hp_W << ", T_SC_.inverse()=" << T_SC_.inverse() << << ", T_WS.inverse()=" << T_WS.inverse() std::endl;
+  std::cout << "hp_W=" << hp_W << ", T_SC_.inverse()=" << T_SC_.inverse().T()  << ", T_WS.inverse()=" << T_WS.inverse().T() << std::endl;
 
 
   Eigen::Vector4d hp_C = T_SC_.inverse() * T_WS.inverse() * hp_W;
@@ -331,7 +329,8 @@ bool ViEkf::update(const Detection & detection){
 
   // TODO: perform update. Note: multiplicative for the quaternion!!
   x_.t_WS += delta_chi.segment<3>(0);
-  x_.q_WS = (kinematics::deltaQ(dAlpha) * x_.q_WS).normalize();
+  x_.q_WS = kinematics::deltaQ(dAlpha) * x_.q_WS;
+  x_.q_WS.normalize();
   x_.v_W += delta_chi.segment<3>(6);
   x_.b_g += delta_chi.segment<3>(9);
   x_.b_a += delta_chi.segment<3>(12);
