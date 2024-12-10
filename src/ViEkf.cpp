@@ -280,15 +280,7 @@ bool ViEkf::update(const Detection & detection){
   // TODO: transform the corner point from world frame into the camera frame
   // (remember the camera projection will assume the point is represented
   // in camera coordinates):
-
-  
-  std::cout << "hp_W=" << hp_W << ", T_SC_.inverse()=" << T_SC_.inverse().T()  << ", T_WS.inverse()=" << T_WS.inverse().T() << std::endl;
-
-
   Eigen::Vector4d hp_C = T_SC_.inverse() * T_WS.inverse() * hp_W;
-
-  std::cout << "hp_C=" << hp_C << std::endl;
-
 
   // TODO: calculate the reprojection error y (residual)
   // using the PinholeCamera::project
@@ -296,7 +288,7 @@ bool ViEkf::update(const Detection & detection){
   Eigen::Matrix<double, 2, 3> U;
 
   // TODO: check validity of projection -- return false if not successful!
-  if (cameraModel_.project(hp_C.segment<3>(0), &reprojection_point, &U) != cameras::ProjectionStatus::Successful){
+  if (cameraModel_.project(hp_C.head<3>(), &reprojection_point, &U) != cameras::ProjectionStatus::Successful){
     return false;
   }
   
