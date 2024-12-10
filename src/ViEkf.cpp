@@ -324,7 +324,7 @@ bool ViEkf::update(const Detection & detection){
 
   // TODO: perform update. Note: multiplicative for the quaternion!!
   x_.t_WS += delta_chi.segment<3>(0);
-  x_.q_WS = kinematics::deltaQ(dAlpha) * x_.q_WS;
+  x_.q_WS = (kinematics::deltaQ(dAlpha) * x_.q_WS).normalize();
   x_.v_W += delta_chi.segment<3>(6);
   x_.b_g += delta_chi.segment<3>(9);
   x_.b_a += delta_chi.segment<3>(12);
