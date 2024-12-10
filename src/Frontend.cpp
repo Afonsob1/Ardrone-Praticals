@@ -255,7 +255,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     if(checkedPoses>=numPosesToMatch) {
       break;
     }
-    
   }
 
   // run RANSAC (to remove outliers and get pose T_CW estimate)
@@ -267,7 +266,9 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   }
   std::vector<int> inliers;
   bool isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
-  if (!isRansacSuccess) return false;
+  if (!isRansacSuccess) {
+    return false;
+  }
 
   // set detections:
   DetectionVec filteredDetections;

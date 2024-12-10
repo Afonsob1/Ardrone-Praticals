@@ -211,6 +211,8 @@ bool ViEkf::addKeypointMeasurements(uint64_t timestampMicroseconds,
   // let's do the propagation from last time to now:
   predict(timestampLastUpdateMicrosec_, timestampMicroseconds);
 
+  std::out << detectionVec.size() << " detections" << std::endl;
+
   // now we are ready to do the actual update
   int successes = 0;
   for(size_t k=0; k<detectionVec.size(); ++k){
@@ -280,6 +282,11 @@ bool ViEkf::update(const Detection & detection){
   // TODO: transform the corner point from world frame into the camera frame
   // (remember the camera projection will assume the point is represented
   // in camera coordinates):
+
+  
+  std::cout << "hp_W=" << hp_W << ", T_SC_.inverse()=" << T_SC_.inverse() << << ", T_WS.inverse()=" << T_WS.inverse() std::endl;
+
+
   Eigen::Vector4d hp_C = T_SC_.inverse() * T_WS.inverse() * hp_W;
 
   std::cout << "hp_C=" << hp_C << std::endl;
