@@ -249,7 +249,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
         }
       }
     }
-
+    
     checkedPoses++;
     
     if(checkedPoses>=numPosesToMatch) {
@@ -266,9 +266,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   }
   std::vector<int> inliers;
   bool isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
-  if (!isRansacSuccess) {
-    return false;
-  }
 
   // set detections:
   DetectionVec filteredDetections;
@@ -292,7 +289,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
                 3, cv::Scalar(0,0,255), -1, CV_AA);
   }
 
-  return true;
+  return isRansacSuccess;
 }
 
 }  // namespace arp
