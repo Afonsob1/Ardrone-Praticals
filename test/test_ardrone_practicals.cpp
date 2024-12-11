@@ -24,7 +24,7 @@ TEST(PinholeCamera, projectBackProject)
   pinholeCamera.project(point_C,&imagePoint, &pointJacobian);
 
   // numeric diference
-  double delta = 0.001;
+  double delta = 0.00001;
   Eigen::Vector3d temp(point_C);
   temp.x() = point_C.x() + delta;
 
