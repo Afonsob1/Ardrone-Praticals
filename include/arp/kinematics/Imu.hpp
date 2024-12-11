@@ -23,7 +23,8 @@ struct RobotState {
   RobotState operator+(const RobotState& d_chi) const {
     RobotState r;
     r.t_WS = t_WS + d_chi.t_WS;
-    r.q_WS = d_chi.q_WS* q_WS;
+    r.q_WS = d_chi.q_WS * q_WS;
+    r.q_WS.normalize();
     r.v_W = v_W + d_chi.v_W;
     r.b_g = b_g + d_chi.b_g;
     r.b_a = b_a + d_chi.b_a;

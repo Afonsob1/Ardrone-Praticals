@@ -15,7 +15,7 @@ Eigen::Matrix<double, 15, 15> calculate_fc(const RobotState & state_k, const Imu
   Eigen::Matrix<double, 3, 3> R_WS = state_k.q_WS.toRotationMatrix();
 
   Eigen::Matrix<double, 15, 15> Fc = Eigen::Matrix<double, 15, 15>::Zero();
-  Fc.block<3,3>(0, 6) = Eigen::Matrix3d::Identity();  
+  Fc.block<3,3>(0, 6) = Eigen::Matrix3d::Identity();
   Fc.block<3,3>(3, 9) = -R_WS;
   Fc.block<3,3>(6, 3) = -arp::kinematics::crossMx(R_WS * (z_k.acc_S - state_k.b_a));
   Fc.block<3,3>(6, 12) = -R_WS;
@@ -31,10 +31,9 @@ RobotState calculate_d_chi(const double dt,
 
   auto R = state_k.q_WS.toRotationMatrix();
   RobotState result;
-  result.t_WS = dt*state_k.v_W;
-  result.q_WS = arp::kinematics::deltaQ(dt*R*(z_k.omega_S - state_k.b_g));
-  result.q_WS.normalize(); // normalize quaternion after updating to ensure numerical stability
-  result.v_W = dt*(R * (z_k.acc_S - state_k.b_a) + Eigen::Vector3d(0,0,-9.81));
+  result.t_WS = dt * state_k.v_W;
+  result.q_WS = arp::kinematics::deltaQ(dt * R * (z_k.omega_S - state_k.b_g));
+  result.v_W = dt * (R * (z_k.acc_S - state_k.b_a) + Eigen::Vector3d(0,0,-9.81));
   result.b_g = Eigen::Vector3d::Zero();
   result.b_a = Eigen::Vector3d::Zero();
 
@@ -63,9 +62,12 @@ bool Imu::stateTransition(const RobotState & state_k_minus_1,
   RobotState sum_state_k_minus_1_chi_1 = state_k_minus_1 + d_chi_1;
   auto d_chi_2 = calculate_d_chi(dt, sum_state_k_minus_1_chi_1, z_k);
 
+  auto tmp_q_WS = Eigen::Quaterniond((d_chi_1.q_WS.coeffs() + d_chi_2.q_WS.coeffs()) * 0.5);
+  tmp_q_WS.normalize();
+
   state_k.t_WS = state_k_minus_1.t_WS + (d_chi_1.t_WS + d_chi_2.t_WS) * 0.5;
-  state_k.q_WS = Eigen::Quaterniond( (d_chi_1.q_WS.coeffs() + d_chi_2.q_WS.coeffs()) * 0.5 ) * state_k_minus_1.q_WS;
-  state_k.q_WS.normalize(); // normalize quaternion after updating to ensure numerical stability
+  state_k.q_WS = tmp_q_WS * state_k_minus_1.q_WS;
+  state_k.q_WS.normalize();
   state_k.v_W = state_k_minus_1.v_W + (d_chi_1.v_W + d_chi_2.v_W) * 0.5;
   state_k.b_g = state_k_minus_1.b_g;
   state_k.b_a = state_k_minus_1.b_a;
@@ -74,7 +76,7 @@ bool Imu::stateTransition(const RobotState & state_k_minus_1,
     Eigen::Matrix<double, 15, 15> I = Eigen::Matrix<double, 15, 15>::Identity();
     Eigen::Matrix<double, 15, 15> Fc_minus_1 = calculate_fc(state_k_minus_1, z_k_minus_1);
     Eigen::Matrix<double, 15, 15> Fc_minus_1_d_chi_1 = calculate_fc(sum_state_k_minus_1_chi_1, z_k);
-    *jacobian = I + 0.5 * dt * Fc_minus_1 + 0.5 * dt * (Fc_minus_1_d_chi_1 * (I + dt * Fc_minus_1));
+    *jacobian = I + 0.5 * dt * Fc_minus_1 + 0.5 * dt * Fc_minus_1_d_chi_1 * (I + dt * Fc_minus_1);
   }
 
   return true;
