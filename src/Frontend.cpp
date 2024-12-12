@@ -102,8 +102,22 @@ bool  Frontend::loadMap(std::string path) {
     if(0==line.compare(0, 7,"frame: ")) {
       // store previous set into map
       landmarks_[poseId] = landmarks;
+      // get pose id:
+      std::stringstream frameSs(line.substr(7,line.size()-1));
+      frameSs >> poseId;
+      if(!frameSs.eof()) {
+        std::string covisStr;
+        frameSs >> covisStr; // comma
+        frameSs >> covisStr;
+        if(0==covisStr.compare("covisibilities:")) {
+          while(!frameSs.eof()) {
+            uint64_t covisId;
+            frameSs >> covisId;
+            covisibilities_[poseId].insert(covisId);
+          }
+        }
+      }
       // move to filling next set of landmarks
-      poseId = std::stoi(line.substr(7,line.size()-1));
       landmarks.clear();
     } else {
       if(poseId>0) {
@@ -151,6 +165,15 @@ bool  Frontend::loadMap(std::string path) {
   }
   std::cout << "loaded " << lmIds.size() << " landmarks from " << landmarks_.size() << " poses." << std::endl;
   return lmIds.size() > 0;
+}
+
+bool Frontend::loadDBoW2Voc(std::string path) {
+  std::cout << "Loading DBoW2 vocabulary from " << path << std::endl;
+  dBowVocabulary_.load(path);
+  // Hand over vocabulary to dataset. false = do not use direct index:
+  dBowDatabase_.setVocabulary(dBowVocabulary_, false, 0);
+  std::cout << "loaded DBoW2 vocabulary with " << dBowVocabulary_.size() << " words." << std::endl;
+  return true; 
 }
 
 int Frontend::detectAndDescribe(

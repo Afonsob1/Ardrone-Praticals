@@ -62,6 +62,41 @@ install(FILES ${CMAKE_BINARY_DIR}/lib/libbrisk.a ${CMAKE_BINARY_DIR}/lib/libagas
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/brisk/)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/lib/CMake/brisk/
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/CMake/brisk/)
+    
+## DBoW2 import
+ExternalProject_Add(DBoW2_external
+    GIT_REPOSITORY https://github.com/dorian3d/DBoW2.git
+    UPDATE_COMMAND ""
+    INSTALL_DIR ${CMAKE_BINARY_DIR}
+    CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/DBoW2
+    BUILD_IN_SOURCE 0
+    BUILD_COMMAND make -j${N_CORES}
+    INSTALL_COMMAND make install
+  )
+add_library(DBoW2 SHARED IMPORTED)
+add_dependencies(DBoW2 DBoW2_external)
+set(DBoW2_LIBRARIES DBoW2)
+if(APPLE)
+  set_target_properties(DBoW2 PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libDBoW2.dylib)
+  # install it once built
+  install(FILES ${CMAKE_BINARY_DIR}/DBoW2/lib/libDBoW2.dylib
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+  install(DIRECTORY ${CMAKE_BINARY_DIR}/include/DBoW2/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/DBoW2/)
+else()
+ set_target_properties(DBoW2 PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libDBoW2.so)
+ # install it once built
+ install(FILES ${CMAKE_BINARY_DIR}/DBoW2/lib/libDBoW2.so
+   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+ install(DIRECTORY ${CMAKE_BINARY_DIR}/include/DBoW2/
+   DESTINATION ${CMAKE_INSTALL_PREFIX}/include/DBoW2/)
+endif()
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -174,12 +209,14 @@ add_library(${PROJECT_NAME}
    src/Frontend.cpp
    src/Imu.cpp
    src/ViEkf.cpp
+   src/FBrisk.cpp
 )
 add_dependencies(${PROJECT_NAME} brisk agast)
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${BRISK_LIBRARIES}
+  ${DBoW2_LIBRARIES}
 )
 
 add_library(${PROJECT_NAME}_autopilot
@@ -213,6 +250,7 @@ target_link_libraries(arp_node
   ${OpenCV_LIBRARIES}
   ${SDL2_LIBRARIES}
   ${BRISK_LIBRARIES}
+  ${DBoW2_LIBRARIES}
 )
 
 #############
