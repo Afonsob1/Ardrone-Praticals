@@ -25,6 +25,8 @@
 #include <arp/cameras/NoDistortion.hpp>
 #include <arp/kinematics/Transformation.hpp>
 
+#include <limits>
+
 namespace arp {
 
 ///\brief This class processes an image and returns the detected marker poses.
@@ -122,9 +124,12 @@ class Frontend
 
  private:
   Frontend() = delete;
-  std::vector<const LandmarkVec*> landmarks_vec_;
-};
+  std::vector<uint64_t> landmarks_vec_; // store the  Pose Ids
+  uint64_t activeFrameId = std::numeric_limits<uint64_t>::max();
 
+  bool detectFrames(const std::set<uint64_t>& possiblesFrames, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, DetectionVec & detections);
+  
+  };
 }  // namespace arp
 
 #endif /* ARDRONE_PRACTICALS_INCLUDE_ARP_FRONTEND_HPP_ */
