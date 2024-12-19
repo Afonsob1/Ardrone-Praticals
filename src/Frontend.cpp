@@ -238,12 +238,28 @@ bool Frontend::ransac(const std::vector<cv::Point3d>& worldPoints,
   return ransacSuccess && (double(inliers.size())/double(imagePoints.size()) > 0.7);
 }
 
+std::vector<DBoW2::FBrisk::TDescriptor> convertMatToTDescriptor(const cv::Mat& descriptors){
+  cv::Size s = descriptors.size();
+  auto rows = s.height;
+  auto cols = s.width;
+
+  std::vector<DBoW2::FBrisk::TDescriptor> descriptorsvec;
+  for (int i = 0; i<rows; i++){
+    uchar* keypointDescriptor = descriptors.data + i*48;
+    DBoW2::FBrisk::TDescriptor feature(48);
+    for (int i = 0; i<48; i++)
+      feature[i] = keypointDescriptor[i];
+    descriptorsvec.push_back(feature);
+  }
+
+  return descriptorsvec;
+}
+
 bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extractionDirection, 
                               DetectionVec & detections, kinematics::Transformation & T_CW, 
                               cv::Mat & visualisationImage, bool needsReInitialisation)
 {
   detections.clear(); // make sure empty
-
   // to gray:
   cv::Mat grayScale;
   cv::cvtColor(image, grayScale, CV_BGR2GRAY);
@@ -253,19 +269,23 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   cv::Mat descriptors;
   detectAndDescribe(grayScale, extractionDirection, keypoints, descriptors);
 
-  // match to map:
+  // get poses
   const int numPosesToMatch = 3;
-  int checkedPoses = 0;
-  for(const auto& lms : landmarks_) { // go through all poses
-    bool matchKeyPoint = false;
-    for(const auto& lm : lms.second) { // go through all landmarks seen from this pose
+  DBoW2::QueryResults results;   
+  auto features = convertMatToTDescriptor(descriptors);
+  dBowDatabase_.query(features, results, numPosesToMatch);
+
+  // match to map:
+  for(const DBoW2::Result& res : results) { // go through all poses
+    auto id = res.Id;
+
+    for(const auto& lm : *landmarks_vec_[id]) { // go through all landmarks seen from this pose
       for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
         uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
         const float dist = brisk::Hamming::PopcntofXORed(
               keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
         // check if a match and process accordingly
         if (dist < 60.0) {
-          matchKeyPoint = true;
           const cv::KeyPoint& cvKeypoint = keypoints[k];
           Eigen::Vector2d keypoint(cvKeypoint.pt.x, cvKeypoint.pt.y);
           detections.push_back(arp::Detection {keypoint, lm.point, lm.landmarkId});
@@ -273,11 +293,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
       }
     }
     
-    checkedPoses++;
-    
-    if(checkedPoses>=numPosesToMatch) {
-      break;
-    }
   }
 
   // run RANSAC (to remove outliers and get pose T_CW estimate)
@@ -313,6 +328,23 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   }
 
   return isRansacSuccess;
+}
+
+void Frontend::buildDBoWDatabase()
+{
+  landmarks_vec_.clear();
+
+  for(const auto& lms : landmarks_) {
+    std::vector<DBoW2::FBrisk::TDescriptor> features;
+
+    for(const auto& lm : lms.second) {
+      auto feat = convertMatToTDescriptor(lm.descriptor)[0];
+      features.push_back(feat);
+    }
+
+    landmarks_vec_.push_back(&lms.second);
+    dBowDatabase_.add(features);
+  }
 }
 
 }  // namespace arp

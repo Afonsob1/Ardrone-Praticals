@@ -156,6 +156,14 @@ int main(int argc, char **argv)
   if(!frontend.loadMap(mapPath))
     ROS_FATAL_STREAM("could not load map from " << mapPath << " !");
   
+  // load DBoW2 vocabulary
+  std::string vocPath = path+"/maps/small_voc.yml.gz";
+  if(!frontend.loadDBoW2Voc(vocPath))
+    ROS_FATAL_STREAM("could not load DBoW2 voc. from " << vocPath << " !");
+
+  // build database
+  frontend.buildDBoWDatabase();
+
   // state publisher -- provided for rviz visualisation of drone pose:
   arp::StatePublisher pubState(nh);
 

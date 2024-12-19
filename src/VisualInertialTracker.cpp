@@ -125,7 +125,6 @@ void VisualInertialTracker::processingLoop()
           P.block<3, 3>(6, 6) *= 0.01 * 0.01;  // 10 cm/s
           P.block<3, 3>(9, 9) *= (1.0 / 60.0) * (1.0 / 60.0);  // 1 degree/sec
           P.block<3, 3>(12, 12) *= 0.1;  // 1 m/s^2
-          //std::cout << "init \n" << T_WS.T() << std::endl;
           std::cout << "init"<< std::endl;
           estimator_->initialiseState(cameraMeasurement.timestampMicroseconds,
                                       x, P);

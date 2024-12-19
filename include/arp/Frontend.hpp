@@ -59,6 +59,10 @@ class Frontend
   /// \return True on success.
   bool loadDBoW2Voc(std::string path);
 
+  /// \brief 
+  /// \return True on success.
+  void buildDBoWDatabase();
+
   /// \brief Detect and match keypoints in image that can be fed to an estimator.
   /// \warning If not returning true, there may still be detections, but not verified
   ///          and T_CW will be invalid.
@@ -118,6 +122,7 @@ class Frontend
 
  private:
   Frontend() = delete;
+  std::vector<const LandmarkVec*> landmarks_vec_;
 };
 
 }  // namespace arp
