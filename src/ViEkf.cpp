@@ -307,7 +307,7 @@ bool ViEkf::update(const Detection & detection){
   Eigen::Matrix2d S = H * P_ * H.transpose() + R;
 
   // chi2 test
-  if(y.transpose()*S.inverse()*y > 40.0){
+  if(y.transpose() * S.inverse() * y > 40.0){
     std::cout << "Rejecting measurement " << std::endl;
     return false;
   }

@@ -125,9 +125,9 @@ class Frontend
  private:
   Frontend() = delete;
   std::vector<uint64_t> landmarks_vec_; // store the  Pose Ids
-  uint64_t activeFrameId = std::numeric_limits<uint64_t>::max();
+  uint64_t activeFrameId_ = std::numeric_limits<uint64_t>::max();
 
-  bool detectFrames(const std::set<uint64_t>& possiblesFrames, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, DetectionVec & detections);
+  bool detectFrames(const std::set<uint64_t>& possiblesFrames, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, DetectionVec & detections,  const kinematics::Transformation * T_CW);
   
   };
 }  // namespace arp

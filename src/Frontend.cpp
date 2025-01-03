@@ -80,7 +80,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
       }
     }
   }
-  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, 185.6909);
+  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, 185.6909); // todo
 }
 
 bool  Frontend::loadMap(std::string path) {
@@ -257,20 +257,33 @@ std::vector<DBoW2::FBrisk::TDescriptor> convertMatToTDescriptor(const cv::Mat& d
 
 
 bool Frontend::detectFrames(
-  const std::set<uint64_t>& possiblesFrames,
+  const std::set<uint64_t>& possibleFrames,
   std::vector<cv::KeyPoint>& keypoints,
   cv::Mat& descriptors,
-  DetectionVec & detections)
+  DetectionVec & detections,
+  const kinematics::Transformation * T_CW)
 {
   int numberOfMatchesForActiveFrame = 0;
 
   // match to map:
-  for(auto id : possiblesFrames) { // go through all poses
+  for(auto id : possibleFrames) { // go through all poses
     int numberOfMatches = 0 ;
-    int l =0;
 
+    
     for(const auto& lm : landmarks_.at(id)) { // go through all landmarks seen from this pose
       bool landmarkMatch = false;
+
+
+      Eigen::Vector2d imagePoint;
+      if (T_CW != nullptr){
+        // transform landmark into the camera frame using the pose prior
+        Eigen::Vector3d transformedLandmark = *T_CW * lm.point;
+
+        // project the transformed landmark into the image frame
+        if (camera_.project(transformedLandmark, &imagePoint) != arp::cameras::ProjectionStatus::Successful) {
+            continue; // skip if the projection is invalid
+        }
+      }
       
       for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
         uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
@@ -280,6 +293,17 @@ bool Frontend::detectFrames(
         if (dist < 60.0) {
           const cv::KeyPoint& cvKeypoint = keypoints[k];
           Eigen::Vector2d keypoint(cvKeypoint.pt.x, cvKeypoint.pt.y);
+          
+          
+          if (T_CW != nullptr) {
+            // check pixel distance from projected image point to keypoint
+            double pixelDistance = (keypoint - imagePoint).norm();
+            std::cout << "pixelDistance: " << pixelDistance << std::endl;
+            if (pixelDistance > 20) {
+              continue; // skip if the pixel distance is too large
+            }
+          }
+          
           detections.push_back(arp::Detection {keypoint, lm.point, lm.landmarkId});
           landmarkMatch = true;
         }
@@ -289,10 +313,11 @@ bool Frontend::detectFrames(
         numberOfMatches++;
     }
 
+    // find the keyframe with highest number of matches
     if (numberOfMatchesForActiveFrame < numberOfMatches)
     {
       numberOfMatchesForActiveFrame = numberOfMatches;
-      activeFrameId = id;
+      activeFrameId_ = id;
     }
   } 
 
@@ -312,7 +337,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
                               DetectionVec & detections, kinematics::Transformation & T_CW, 
                               cv::Mat & visualisationImage, bool needsReInitialisation)
 {
-
+  
   detections.clear(); // make sure empty
   // to gray:
   cv::Mat grayScale;
@@ -326,25 +351,30 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   bool isDetectSuccess = false;
   
   if (!needsReInitialisation){
-    std::set<uint64_t> covisibilities = covisibilities_.at(activeFrameId);
-    covisibilities.insert(activeFrameId);
+    std::set<uint64_t> covisibilities = covisibilities_.at(activeFrameId_);
+    covisibilities.insert(activeFrameId_);
+    
+    std::cout << "covisibilities size " <<  covisibilities.size() << std::endl; // TODO: delete
 
-    isDetectSuccess = detectFrames(covisibilities, keypoints, descriptors, detections);  
+    isDetectSuccess = detectFrames(covisibilities, keypoints, descriptors, detections, &T_CW);  
   }
 
   if(needsReInitialisation || !isDetectSuccess){
     // get poses
     auto features = convertMatToTDescriptor(descriptors);
     DBoW2::QueryResults results;
-    int numPosesToMatch=3;
+    int numPosesToMatch = 3;
     dBowDatabase_.query(features, results, numPosesToMatch);
 
-    std::set<uint64_t> possiblesFrames;
+    std::set<uint64_t> possibleFrames;
     for(const DBoW2::Result& res : results) {
-      possiblesFrames.insert(landmarks_vec_.at(res.Id));
+      possibleFrames.insert(landmarks_vec_.at(res.Id));
     }
+
+    std::cout << "possibleFrames" << possibleFrames.size() << std::endl; // TODO: delete
     
-    isDetectSuccess = detectFrames(possiblesFrames, keypoints, descriptors, detections);
+    isDetectSuccess = detectFrames(possibleFrames, keypoints, descriptors, detections,
+                                   needsReInitialisation ? nullptr : &T_CW);
   }
 
 
@@ -376,17 +406,19 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   // visualise by painting stuff into visualisationImage:
   visualisationImage = image.clone();
   
-  for(const auto& point : imagePoints) {
-    cv::circle(visualisationImage,
-                point,
-                3, cv::Scalar(255,0,0), -1, CV_AA);
-  }
+  // all the landmarks
+  // for(const auto& point : imagePoints) {
+  //   cv::circle(visualisationImage,
+  //               point,
+  //               3, cv::Scalar(255,0,0), -1, CV_AA); // blue
+  // }
   
-  for(const auto& detection : detections) {
-    cv::circle(visualisationImage,
-                cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
-                3, cv::Scalar(0,0,255), -1, CV_AA);
-  }
+  // // detected landmarks 
+  // for(const auto& detection : detections) {
+  //   cv::circle(visualisationImage,
+  //               cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
+  //               3, cv::Scalar(0,0,255), -1, CV_AA); // red
+  // }
 
   return isRansacSuccess && isDetectSuccess;
 }
