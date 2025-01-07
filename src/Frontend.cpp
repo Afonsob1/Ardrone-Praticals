@@ -50,7 +50,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
   distCoeffs_.at<double>(3) = p2;
   
   // BRISK detector and descriptor
-  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(10, 0, 100, 2000));
+  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(15, 4, 50, 500)); //  10, 0, 100, 2000
   extractor_.reset(new brisk::BriskDescriptorExtractor(true, false));
   
   // leverage camera-aware BRISK (caution: needs the *_new* maps...)
@@ -80,7 +80,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
       }
     }
   }
-  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, 185.6909); // todo
+  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, (focalLengthU + focalLengthV) / 2);
 }
 
 bool  Frontend::loadMap(std::string path) {
@@ -289,12 +289,12 @@ bool Frontend::detectFrames(
         uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
         const float dist = brisk::Hamming::PopcntofXORed(
               keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
+              
         // check if a match and process accordingly
         if (dist < 60.0) {
           const cv::KeyPoint& cvKeypoint = keypoints[k];
           Eigen::Vector2d keypoint(cvKeypoint.pt.x, cvKeypoint.pt.y);
-          
-          
+                    
           if (T_CW != nullptr) {
             // check pixel distance from projected image point to keypoint
             double pixelDistance = (keypoint - imagePoint).norm();
@@ -353,8 +353,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   if (!needsReInitialisation){
     std::set<uint64_t> covisibilities = covisibilities_.at(activeFrameId_);
     covisibilities.insert(activeFrameId_);
-    
-    std::cout << "covisibilities size " <<  covisibilities.size() << std::endl; // TODO: delete
 
     isDetectSuccess = detectFrames(covisibilities, keypoints, descriptors, detections, &T_CW);  
   }
@@ -370,8 +368,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     for(const DBoW2::Result& res : results) {
       possibleFrames.insert(landmarks_vec_.at(res.Id));
     }
-
-    std::cout << "possibleFrames" << possibleFrames.size() << std::endl; // TODO: delete
     
     isDetectSuccess = detectFrames(possibleFrames, keypoints, descriptors, detections,
                                    needsReInitialisation ? nullptr : &T_CW);
@@ -394,14 +390,17 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   bool isRansacSuccess = false;
   if (worldPointsSet.size() >= 5) {
     isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
+
   }
 
   // set detections:
-  DetectionVec filteredDetections;
-  for (int index : inliers) {
-      filteredDetections.push_back(detections[index]);
+  if (isRansacSuccess){
+    DetectionVec filteredDetections;
+    for (int index : inliers) {
+        filteredDetections.push_back(detections[index]);
+    }
+    detections = std::move(filteredDetections);
   }
-  detections = std::move(filteredDetections);
 
   // visualise by painting stuff into visualisationImage:
   visualisationImage = image.clone();
@@ -420,7 +419,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   //               3, cv::Scalar(0,0,255), -1, CV_AA); // red
   // }
 
-  return isRansacSuccess && isDetectSuccess;
+  return needsReInitialisation || (isRansacSuccess && isDetectSuccess);
 }
 
 void Frontend::buildDBoWDatabase()

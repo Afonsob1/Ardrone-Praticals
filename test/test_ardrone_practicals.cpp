@@ -64,8 +64,6 @@ TEST(PinholeCamera, projectBackProject)
   EXPECT_TRUE(fabs(ray_C.normalized().transpose()*point_C.normalized()-1.0)<1.0e-10);
 }
 
-// TODO: write more tests here...
-
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
