@@ -298,12 +298,12 @@ bool Frontend::detectFrames(
           if (T_CW != nullptr) {
             // check pixel distance from projected image point to keypoint
             double pixelDistance = (keypoint - imagePoint).norm();
-            std::cout << "pixelDistance: " << pixelDistance << std::endl;
             if (pixelDistance > 20) {
               continue; // skip if the pixel distance is too large
             }
           }
           
+          // only include detections if they are not already in the list
           auto detection = arp::Detection {keypoint, lm.point, lm.landmarkId};
           if(std::find(detections.begin(), detections.end(), detection) == detections.end()) {
             detections.push_back(detection);
@@ -385,15 +385,8 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
       imagePoints.emplace_back(detection.keypoint.x(), detection.keypoint.y());
   }
 
-  std::vector<int> inliers;  
-  std::set<cv::Point3d, Point3dComparator> worldPointsSet;
-  for (auto point : worldPoints)
-    worldPointsSet.insert(point);
-    
-  bool isRansacSuccess = false;
-  if (worldPointsSet.size() >= 5) {
-    isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
-  }
+  std::vector<int> inliers;
+  bool isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
 
   // filter out outliers
   if (isRansacSuccess){
@@ -421,7 +414,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   //               3, cv::Scalar(0,0,255), -1, CV_AA); // red
   // }
 
-  return needsReInitialisation || (isRansacSuccess && isDetectSuccess);
+  return isRansacSuccess && isDetectSuccess;
 }
 
 void Frontend::buildDBoWDatabase()

@@ -60,6 +60,10 @@ struct Detection {
   Eigen::Vector2d keypoint; ///< The 2d keypoint detection.
   Eigen::Vector3d landmark; ///< The 3d landmark in World coordinates.
   uint64_t landmarkId; ///< The corresponding landmark ID.
+
+  bool operator==(const Detection& other) const {
+    return this->landmark == other.landmark;
+  }
 };
 typedef std::vector<Detection, Eigen::aligned_allocator<Detection>> DetectionVec;
 
