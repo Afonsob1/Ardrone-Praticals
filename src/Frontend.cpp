@@ -304,8 +304,11 @@ bool Frontend::detectFrames(
             }
           }
           
-          detections.push_back(arp::Detection {keypoint, lm.point, lm.landmarkId});
-          landmarkMatch = true;
+          auto detection = arp::Detection {keypoint, lm.point, lm.landmarkId};
+          if(std::find(detections.begin(), detections.end(), detection) == detections.end()) {
+            detections.push_back(detection);
+            landmarkMatch = true;
+          }
         }
       }
 
@@ -390,10 +393,9 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   bool isRansacSuccess = false;
   if (worldPointsSet.size() >= 5) {
     isRansacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
-
   }
 
-  // set detections:
+  // filter out outliers
   if (isRansacSuccess){
     DetectionVec filteredDetections;
     for (int index : inliers) {
@@ -403,7 +405,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   }
 
   // visualise by painting stuff into visualisationImage:
-  visualisationImage = image.clone();
+  // visualisationImage = image.clone();
   
   // all the landmarks
   // for(const auto& point : imagePoints) {
