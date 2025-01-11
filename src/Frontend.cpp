@@ -298,7 +298,7 @@ bool Frontend::detectFrames(
           if (T_CW != nullptr) {
             // check pixel distance from projected image point to keypoint
             double pixelDistance = (keypoint - imagePoint).norm();
-            if (pixelDistance > 20) {
+            if (pixelDistance > 2) {
               continue; // skip if the pixel distance is too large
             }
           }
@@ -401,18 +401,18 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   // visualisationImage = image.clone();
   
   // all the landmarks
-  // for(const auto& point : imagePoints) {
-  //   cv::circle(visualisationImage,
-  //               point,
-  //               3, cv::Scalar(255,0,0), -1, CV_AA); // blue
-  // }
+  for(const auto& point : imagePoints) {
+    cv::circle(visualisationImage,
+                 point,
+                 3, cv::Scalar(255,0,0), -1, CV_AA); // blue
+  }
   
-  // // detected landmarks 
-  // for(const auto& detection : detections) {
-  //   cv::circle(visualisationImage,
-  //               cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
-  //               3, cv::Scalar(0,0,255), -1, CV_AA); // red
-  // }
+  // detected landmarks 
+  for(const auto& detection : detections) {
+    cv::circle(visualisationImage,
+                 cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
+                 3, cv::Scalar(0,0,255), -1, CV_AA); // red
+  }
 
   return isRansacSuccess && isDetectSuccess;
 }
