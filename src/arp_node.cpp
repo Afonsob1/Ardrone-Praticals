@@ -27,6 +27,7 @@
 #include <arp/VisualInertialTracker.hpp>
 #include <arp/Frontend.hpp>
 #include <arp/StatePublisher.hpp>
+#include <arp/InteractiveMarkerServer.hpp>
 
 class Subscriber
 {
@@ -193,6 +194,15 @@ int main(int argc, char **argv)
         &arp::StatePublisher::publish, &pubState, std::placeholders::_1,
         std::placeholders::_2));
 
+  // tell estimator to call autopilot's controller
+  visualInertialTracker->setControllerCallback(
+        std::bind(&arp::Autopilot::controllerCallback, &autopilot,
+        std::placeholders::_1, std::placeholders::_2));
+
+
+  // start rviz markers 
+  arp::InteractiveMarkerServer markerServer(autopilot);
+  markerServer.activate(0,0,0,0);
 
   auto last_time = std::chrono::steady_clock::now();
 
@@ -253,6 +263,7 @@ int main(int argc, char **argv)
 
     // check states!
     droneStatus = autopilot.droneStatus();
+    
     // command
     if (state[SDL_SCANCODE_ESCAPE]) {
       std::cout << "ESTOP PRESSED, SHUTTING OFF ALL MOTORS status=" << droneStatus;
@@ -337,8 +348,27 @@ int main(int argc, char **argv)
 
     }
 
-    autopilot.manualMove(forward, left, up, rotateLeft);
+    // enable automatic mode
+    if (state[SDL_SCANCODE_RCTRL]){      
+      double x, y, z, yaw;
+      autopilot.getPoseReference(x, y, z, yaw);
+      markerServer.activate(x, y, z, yaw);
+      autopilot.setAutomatic();
+      std::cout << "enable automatic mode: isAutomatic=" << autopilot.isAutomatic() << std::endl;
+    }
 
+    // enable manual mode
+    if (state[SDL_SCANCODE_SPACE]){
+      markerServer.deactivate();
+      autopilot.setManual();
+      std::cout << "enable manual mode: isAutomatic=" << autopilot.isAutomatic() << std::endl;
+    }
+
+    // todo check if we are in manual mode when using keys
+
+    if(!autopilot.isAutomatic()) {
+      autopilot.manualMove(forward, left, up, rotateLeft);
+    }
   }
 
   // make sure to land the drone...

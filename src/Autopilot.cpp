@@ -28,6 +28,25 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   // flattrim service
   srvFlattrim_ = nh_->serviceClient<std_srvs::Empty>(
       nh_->resolveName("ardrone/flattrim"), 1);
+
+  PidController::Parameters p;
+  p.k_p = 0.05;
+  p.k_i = 0.0;
+  p.k_d = 0.0;
+
+  pidX.setParameters(p);
+  pidX.setOutputLimits(-1.0, 1.0);
+
+  pidY.setParameters(p);
+  pidY.setOutputLimits(-1.0, 1.0);
+
+  p.k_p = 1.0;
+  pidZ.setParameters(p);
+  pidZ.setOutputLimits(-1.0, 1.0);
+
+  p.k_p = 1.5;
+  pidYaw.setParameters(p);
+  pidYaw.setOutputLimits(-1.0, 1.0);
 }
 
 void Autopilot::navdataCallback(const ardrone_autonomy::NavdataConstPtr& msg)
@@ -118,16 +137,13 @@ bool Autopilot::manualMove(double forward, double left, double up,
 bool Autopilot::move(double forward, double left, double up,
                            double rotateLeft)
 {
-
   DroneStatus status = droneStatus();
-  if (status == DroneStatus::Flying || status == DroneStatus::Flying2 || status == DroneStatus::Hovering){
+  if (status == DroneStatus::Flying || status == DroneStatus::Flying2 || status == DroneStatus::Hovering) {
     geometry_msgs::Twist moveMsg;
     moveMsg.linear.x = forward;
     moveMsg.linear.y = left;
     moveMsg.linear.z = up;
-
     moveMsg.angular.z = rotateLeft;
-
     pubMove_.publish(moveMsg);
 
     return true;
@@ -156,6 +172,8 @@ bool Autopilot::setPoseReference(double x, double y, double z, double yaw)
   ref_y_ = y;
   ref_z_ = z;
   ref_yaw_ = yaw;
+
+  std::cout << "Set reference to x=" << x << ", y=" << y << ", z=" << z << ", yaw=" << yaw << std::endl;
   return true;
 }
 
@@ -180,13 +198,70 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     return;
   }
 
-  // TODO: only enable when in flight
+  // only enable when in flight
+  if (droneStatus() != DroneStatus::Flying) {
+    return;
+  }
+  
+  // compute error signals
+  double x_ref, y_ref, z_ref, yaw_ref;
+  getPoseReference(x_ref, y_ref, z_ref, yaw_ref);
+  auto pos_ref = Eigen::Vector3d(x_ref, y_ref, z_ref);
 
-  // TODO: get ros parameter
+  auto R = x.q_WS.toRotationMatrix();
+  auto pos_error = R.transpose() * (pos_ref - x.t_WS);
 
-  // TODO: compute control output
+  double yaw_estimated = arp::kinematics::yawAngle(x.q_WS);
 
-  // TODO: send to move
+  double yaw_error = yaw_ref - yaw_estimated;
+  std::cout << "yaw_error: " << yaw_error << std::endl; // TODO: remove this line
+  
+  if (yaw_error > M_PI) {
+    yaw_error -= 2*M_PI;
+  } else if (yaw_error < -M_PI) {
+    yaw_error += 2*M_PI;
+  }
+
+  // compute error signal time derivatives
+  auto pos_error_dot = - R.transpose() * x.v_W;
+  auto yaw_error_dot = 0;
+  
+
+  // get ros parameter
+  double max_angle, max_vel_mm, max_yaw;
+  if(!nh_->getParam("/ardrone_driver/euler_angle_max", max_angle)) {
+    std::cout << "Error reading parameter euler_angle_max" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_driver/control_vz_max", max_vel_mm)) {
+    std::cout << "Error reading parameter control_vz_max" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_driver/control_yaw", max_yaw)) {
+    std::cout << "Error reading parameter control_yaw" << std::endl;
+    return;
+  }
+
+  double max_vel = max_vel_mm / 1000.0;
+
+  // set pid limits
+  pidX.setOutputLimits(-max_angle, max_angle);
+  pidY.setOutputLimits(-max_angle, max_angle);
+  pidZ.setOutputLimits(-max_vel, max_vel);
+  pidYaw.setOutputLimits(-max_yaw, max_yaw);
+
+  // compute control output
+  double u_x = pidX.control(timeMicroseconds, pos_error.x(), pos_error_dot.x());
+  double u_y = pidY.control(timeMicroseconds, pos_error.y(), pos_error_dot.y());
+  double u_z = pidZ.control(timeMicroseconds, pos_error.z(), pos_error_dot.z());
+  double u_yaw = pidYaw.control(timeMicroseconds, yaw_error, yaw_error_dot);
+
+  // send to move
+  std::cout << "u_x: " << u_x << ", u_y: " << u_y << ", u_z: " << u_z << ", u_yaw: " << u_yaw << std::endl; // TODO: remove this
+
+  move(u_x, u_y, u_z, u_yaw);
 
 }
 
