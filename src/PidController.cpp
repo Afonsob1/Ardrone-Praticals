@@ -7,6 +7,7 @@
 
 #include <arp/PidController.hpp>
 #include <stdexcept>
+#include <algorithm>
 
 namespace arp {
 
@@ -14,14 +15,34 @@ namespace arp {
 void PidController::setParameters(const Parameters & parameters)
 {
   parameters_ = parameters;
+
 }
 
 // Implements the controller as u(t)=c(e(t))
 double PidController::control(uint64_t timestampMicroseconds, double e,
                               double e_dot)
 {
-  // TODO: implement...
-  return 0.0;
+  // if it just started, we cannot compute the derivative
+  if (lastTimestampMicroseconds_ == 0) {
+    lastTimestampMicroseconds_ = timestampMicroseconds;
+    return 0.0;
+  }
+  
+  double timestampSeconds = (double)(timestampMicroseconds - lastTimestampMicroseconds_) / 10E+6;
+  timestampSeconds = std::min(0.1, timestampSeconds); // make sure it is at least 0.1 seconds
+
+  double output = parameters_.k_p * e + parameters_.k_i * integratedError_ + parameters_.k_d * e_dot;
+  // saturate:
+  if (output < minOutput_) {
+    output = minOutput_; // clamp -- and DO NOT INTEGRATE ERROR (anti-reset windup)
+  } else if (output > maxOutput_) {
+    output = maxOutput_; // clamp -- and DO NOT INTEGRATE ERROR (anti-reset windup)
+  } else {
+    integratedError_ += e * timestampSeconds; // safe to keep integrating
+  }
+  
+  lastTimestampMicroseconds_ = timestampMicroseconds;
+  return output;
 }
 
 // Reset the integrator to zero again.
