@@ -195,7 +195,7 @@ int main(int argc, char **argv)
         std::placeholders::_2));
 
   // tell estimator to call autopilot's controller
-  visualInertialTracker->setControllerCallback(
+  visualInertialTracker.setControllerCallback(
         std::bind(&arp::Autopilot::controllerCallback, &autopilot,
         std::placeholders::_1, std::placeholders::_2));
 

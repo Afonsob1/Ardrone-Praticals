@@ -172,8 +172,6 @@ bool Autopilot::setPoseReference(double x, double y, double z, double yaw)
   ref_y_ = y;
   ref_z_ = z;
   ref_yaw_ = yaw;
-
-  std::cout << "Set reference to x=" << x << ", y=" << y << ", z=" << z << ", yaw=" << yaw << std::endl;
   return true;
 }
 
@@ -199,7 +197,8 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   }
 
   // only enable when in flight
-  if (droneStatus() != DroneStatus::Flying) {
+  auto status = droneStatus();
+  if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
     return;
   }
   
@@ -214,7 +213,6 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   double yaw_estimated = arp::kinematics::yawAngle(x.q_WS);
 
   double yaw_error = yaw_ref - yaw_estimated;
-  std::cout << "yaw_error: " << yaw_error << std::endl; // TODO: remove this line
   
   if (yaw_error > M_PI) {
     yaw_error -= 2*M_PI;
