@@ -30,9 +30,9 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
       nh_->resolveName("ardrone/flattrim"), 1);
 
   PidController::Parameters p;
-  p.k_p = 0.05;
-  p.k_i = 0.0;
-  p.k_d = 0.0;
+  p.k_p = 0.1; // 0.05
+  p.k_i = 0.01; // 0.00
+  p.k_d = 0.05; // 0.05
 
   pidX.setParameters(p);
   pidX.setOutputLimits(-1.0, 1.0);
@@ -40,11 +40,15 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   pidY.setParameters(p);
   pidY.setOutputLimits(-1.0, 1.0);
 
-  p.k_p = 1.0;
+  p.k_p = 0.5; // 1.0
+  p.k_i = 0.02; // 0.0
+  p.k_d = 0.1; // 0.0
   pidZ.setParameters(p);
   pidZ.setOutputLimits(-1.0, 1.0);
 
-  p.k_p = 1.5;
+  p.k_p = 0.8; // 1.5
+  p.k_i = 0.03; // 0.0
+  p.k_d = 0.15; // 0.0
   pidYaw.setParameters(p);
   pidYaw.setOutputLimits(-1.0, 1.0);
 }
@@ -257,8 +261,6 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   double u_yaw = pidYaw.control(timeMicroseconds, yaw_error, yaw_error_dot);
 
   // send to move
-  std::cout << "u_x: " << u_x << ", u_y: " << u_y << ", u_z: " << u_z << ", u_yaw: " << u_yaw << std::endl; // TODO: remove this
-
   move(u_x, u_y, u_z, u_yaw);
 
 }

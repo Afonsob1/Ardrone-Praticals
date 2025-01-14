@@ -354,17 +354,13 @@ int main(int argc, char **argv)
       autopilot.getPoseReference(x, y, z, yaw);
       markerServer.activate(x, y, z, yaw);
       autopilot.setAutomatic();
-      std::cout << "enable automatic mode: isAutomatic=" << autopilot.isAutomatic() << std::endl;
     }
 
     // enable manual mode
     if (state[SDL_SCANCODE_SPACE]){
       markerServer.deactivate();
       autopilot.setManual();
-      std::cout << "enable manual mode: isAutomatic=" << autopilot.isAutomatic() << std::endl;
     }
-
-    // todo check if we are in manual mode when using keys
 
     if(!autopilot.isAutomatic()) {
       autopilot.manualMove(forward, left, up, rotateLeft);
