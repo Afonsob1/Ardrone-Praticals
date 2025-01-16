@@ -42,7 +42,7 @@ double PidController::control(uint64_t timestampMicroseconds, double e,
   }
   
   lastTimestampMicroseconds_ = timestampMicroseconds;
-  return output;
+  return output / maxOutput_; // normalise to [-1.0, 1.0] - works since abs(maxOutput) == abs(minOutput)
 }
 
 // Reset the integrator to zero again.
