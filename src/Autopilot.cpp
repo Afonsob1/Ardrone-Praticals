@@ -33,24 +33,43 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   p.k_p = 0.1; // 0.05
   p.k_i = 0.01; // 0.00
   p.k_d = 0.05; // 0.05
-
   pidX.setParameters(p);
-  pidX.setOutputLimits(-1.0, 1.0);
-
   pidY.setParameters(p);
-  pidY.setOutputLimits(-1.0, 1.0);
 
   p.k_p = 0.5; // 1.0
   p.k_i = 0.02; // 0.0
   p.k_d = 0.1; // 0.0
   pidZ.setParameters(p);
-  pidZ.setOutputLimits(-1.0, 1.0);
 
   p.k_p = 0.8; // 1.5
   p.k_i = 0.03; // 0.0
   p.k_d = 0.15; // 0.0
   pidYaw.setParameters(p);
-  pidYaw.setOutputLimits(-1.0, 1.0);
+
+  // get ros parameter
+  double max_angle, max_vel_mm, max_yaw;
+  if(!nh_->getParam("/ardrone_driver/euler_angle_max", max_angle)) {
+    std::cout << "Error reading parameter euler_angle_max" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_driver/control_vz_max", max_vel_mm)) {
+    std::cout << "Error reading parameter control_vz_max" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_driver/control_yaw", max_yaw)) {
+    std::cout << "Error reading parameter control_yaw" << std::endl;
+    return;
+  }
+
+  double max_vel = max_vel_mm / 1000.0;
+
+  // set pid limits
+  pidX.setOutputLimits(-max_angle, max_angle);
+  pidY.setOutputLimits(-max_angle, max_angle);
+  pidZ.setOutputLimits(-max_vel, max_vel);
+  pidYaw.setOutputLimits(-max_yaw, max_yaw);
 }
 
 void Autopilot::navdataCallback(const ardrone_autonomy::NavdataConstPtr& msg)
@@ -227,32 +246,6 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   // compute error signal time derivatives
   auto pos_error_dot = - R.transpose() * x.v_W;
   auto yaw_error_dot = 0;
-  
-
-  // get ros parameter
-  double max_angle, max_vel_mm, max_yaw;
-  if(!nh_->getParam("/ardrone_driver/euler_angle_max", max_angle)) {
-    std::cout << "Error reading parameter euler_angle_max" << std::endl;
-    return;
-  }
-
-  if (!nh_->getParam("/ardrone_driver/control_vz_max", max_vel_mm)) {
-    std::cout << "Error reading parameter control_vz_max" << std::endl;
-    return;
-  }
-
-  if (!nh_->getParam("/ardrone_driver/control_yaw", max_yaw)) {
-    std::cout << "Error reading parameter control_yaw" << std::endl;
-    return;
-  }
-
-  double max_vel = max_vel_mm / 1000.0;
-
-  // set pid limits
-  pidX.setOutputLimits(-max_angle, max_angle);
-  pidY.setOutputLimits(-max_angle, max_angle);
-  pidZ.setOutputLimits(-max_vel, max_vel);
-  pidYaw.setOutputLimits(-max_yaw, max_yaw);
 
   // compute control output
   double u_x = pidX.control(timeMicroseconds, pos_error.x(), pos_error_dot.x());
