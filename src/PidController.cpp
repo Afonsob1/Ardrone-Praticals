@@ -28,8 +28,8 @@ double PidController::control(uint64_t timestampMicroseconds, double e,
     return 0.0;
   }
   
-  double timestampSeconds = (double)(timestampMicroseconds - lastTimestampMicroseconds_) / 10E+6;
-  timestampSeconds = std::min(0.1, timestampSeconds); // make sure it is at most 0.1 seconds
+  double timestampSeconds = (double)(timestampMicroseconds - lastTimestampMicroseconds_) / 1E6;
+  timestampSeconds = std::min<double>(0.1, timestampSeconds); // make sure it is at most 0.1 seconds
 
   double output = parameters_.k_p * e + parameters_.k_i * integratedError_ + parameters_.k_d * e_dot;
   // saturate:
