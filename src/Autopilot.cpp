@@ -207,6 +207,14 @@ bool Autopilot::getPoseReference(double& x, double& y, double& z, double& yaw) {
   return true;
 }
 
+void resetIntegrators()
+{
+  pidX.resetIntegrator();
+  pidY.resetIntegrator();
+  pidZ.resetIntegrator();
+  pidYaw.resetIntegrator();
+}
+
 /// The callback from the estimator that sends control outputs to the drone
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
@@ -216,6 +224,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     // keep resetting this to make sure we use the current state as reference as soon as sent to automatic mode
     const double yaw = kinematics::yawAngle(x.q_WS);
     setPoseReference(x.t_WS[0], x.t_WS[1], x.t_WS[2], yaw);
+    resetIntegrators();
     return;
   }
 
@@ -234,7 +243,6 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   auto pos_error = R.transpose() * (pos_ref - x.t_WS);
 
   double yaw_estimated = arp::kinematics::yawAngle(x.q_WS);
-
   double yaw_error = yaw_ref - yaw_estimated;
   
   if (yaw_error > M_PI) {
