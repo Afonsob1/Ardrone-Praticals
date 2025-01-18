@@ -130,6 +130,8 @@ class Autopilot {
   void controllerCallback(uint64_t timeMicroseconds,
                           const arp::kinematics::RobotState& x);
 
+  void resetIntegrators();
+
  protected:
   /// \brief Move the drone.
   /// @param[in] forward Forward tilt [-1,...,1] scaling the maximum tilt ROS parameter.

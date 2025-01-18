@@ -207,7 +207,7 @@ bool Autopilot::getPoseReference(double& x, double& y, double& z, double& yaw) {
   return true;
 }
 
-void resetIntegrators()
+void Autopilot::resetIntegrators()
 {
   pidX.resetIntegrator();
   pidY.resetIntegrator();
