@@ -271,8 +271,6 @@ bool Frontend::detectFrames(
 
     
     for(const auto& lm : landmarks_.at(id)) { // go through all landmarks seen from this pose
-      bool landmarkMatch = false;
-
 
       Eigen::Vector2d imagePoint;
       if (T_CW != nullptr){
@@ -285,13 +283,15 @@ bool Frontend::detectFrames(
         }
       }
       
+      arp::Detection best_detection;
+      float best_dist = 60.0;
       for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
         uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
         const float dist = brisk::Hamming::PopcntofXORed(
               keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
               
         // check if a match and process accordingly
-        if (dist < 60.0) {
+        if (dist < best_dist) {
           const cv::KeyPoint& cvKeypoint = keypoints[k];
           Eigen::Vector2d keypoint(cvKeypoint.pt.x, cvKeypoint.pt.y);
                     
@@ -303,17 +303,20 @@ bool Frontend::detectFrames(
             }
           }
           
-          // only include detections if they are not already in the list
-          auto detection = arp::Detection {keypoint, lm.point, lm.landmarkId};
-          if(std::find(detections.begin(), detections.end(), detection) == detections.end()) {
-            detections.push_back(detection);
-            landmarkMatch = true;
-          }
+          best_detection = arp::Detection {keypoint, lm.point, lm.landmarkId};
+          best_dist = dist;
         }
       }
 
-      if (landmarkMatch)
-        numberOfMatches++;
+      if (best_dist >= 60.0)
+        continue;
+      else{
+        if (std::find(detections.begin(), detections.end(), best_detection) == detections.end()){
+          detections.push_back(best_detection);
+          numberOfMatches++;
+        }
+      }
+
     }
 
     // find the keyframe with highest number of matches
@@ -364,7 +367,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     // get poses
     auto features = convertMatToTDescriptor(descriptors);
     DBoW2::QueryResults results;
-    int numPosesToMatch = 3;
+    int numPosesToMatch = 5;
     dBowDatabase_.query(features, results, numPosesToMatch);
 
     std::set<uint64_t> possibleFrames;
@@ -411,11 +414,12 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   for(const auto& detection : detections) {
     cv::circle(visualisationImage,
                  cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
-                 3, cv::Scalar(0,0,255), -1, CV_AA); // red
+                 3, cv::Scalar(0,255,0), -1, CV_AA); // red
   }
 
-  return isRansacSuccess && isDetectSuccess;
+  return isRansacSuccess;
 }
+
 
 void Frontend::buildDBoWDatabase()
 {
