@@ -225,23 +225,24 @@ int main(int argc, char **argv)
         image = undistortedImg;
       } 
 
-      cv::putText(image, arp::Autopilot::getDroneStatusString(droneStatus), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-      cv::putText(image, std::to_string((int)autopilot.droneBattery()) + "%", cv::Point(560, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+      cv::putText(image, arp::Autopilot::getDroneStatusString(droneStatus), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+      cv::putText(image, std::to_string((int)autopilot.droneBattery()) + "%", cv::Point(590, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+      cv::putText(image, (autopilot.isAutomatic() ? "Auto" : "Manual"), cv::Point(570, 40), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+      cv::putText(image, (undistorted ? "Undistorted" : "Raw Camera"), cv::Point(260, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+      cv::putText(image, "Press C to Change", cv::Point(260, 40), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0), 2);
 
       if (droneStatus == arp::Autopilot::DroneStatus::Inited || droneStatus == arp::Autopilot::DroneStatus::Landed) {
-        cv::putText(image, "T: Launch", cv::Point(240, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "T: Launch", cv::Point(270, 350), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
       }
 
       if (droneStatus == arp::Autopilot::DroneStatus::Flying || droneStatus == arp::Autopilot::DroneStatus::Hovering || droneStatus == arp::Autopilot::DroneStatus::Flying2) {
-        cv::putText(image, "ESC", cv::Point(300, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-        cv::putText(image, "  W  ", cv::Point(10, 320), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-        cv::putText(image, "A S D", cv::Point(10, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-        cv::putText(image, "   UP   ", cv::Point(480, 320), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-        cv::putText(image, "LF DW RT", cv::Point(480, 350), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "ESC", cv::Point(300, 350), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "  W  ", cv::Point(10, 330), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "A S D", cv::Point(10, 350), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "   UP   ", cv::Point(540, 330), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
+        cv::putText(image, "LF DW RT", cv::Point(540, 350), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
       }
 
-      cv::putText(image, (undistorted?" Undistorted":"Raw Camera"), cv::Point(220, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-      cv::putText(image, "Press C to Change", cv::Point(230, 60), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
 
       
       // https://stackoverflow.com/questions/22702630/converting-cvmat-to-sdl-texture
@@ -376,4 +377,3 @@ int main(int argc, char **argv)
   SDL_DestroyWindow(window);
   SDL_Quit();
 }
-
