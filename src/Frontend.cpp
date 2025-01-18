@@ -50,7 +50,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
   distCoeffs_.at<double>(3) = p2;
   
   // BRISK detector and descriptor
-  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(15, 4, 50, 500)); //  10, 0, 100, 2000
+  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(40, 2, 50, 1000)); //  10, 0, 100, 2000 
   extractor_.reset(new brisk::BriskDescriptorExtractor(true, false));
   
   // leverage camera-aware BRISK (caution: needs the *_new* maps...)
@@ -275,10 +275,10 @@ bool Frontend::detectFrames(
       Eigen::Vector2d imagePoint;
       if (T_CW != nullptr){
         // transform landmark into the camera frame using the pose prior
-        Eigen::Vector3d transformedLandmark = *T_CW * lm.point;
+        Eigen::Vector4d transformedLandmark = *T_CW * Eigen::Vector4d(lm.point.x(), lm.point.y(), lm.point.z(), 1.0);
 
         // project the transformed landmark into the image frame
-        if (camera_.project(transformedLandmark, &imagePoint) != arp::cameras::ProjectionStatus::Successful) {
+        if (camera_.project(transformedLandmark.head<3>(), &imagePoint) != arp::cameras::ProjectionStatus::Successful) {
             continue; // skip if the projection is invalid
         }
       }
@@ -298,7 +298,7 @@ bool Frontend::detectFrames(
           if (T_CW != nullptr) {
             // check pixel distance from projected image point to keypoint
             double pixelDistance = (keypoint - imagePoint).norm();
-            if (pixelDistance > 2) {
+            if (pixelDistance > 30) {
               continue; // skip if the pixel distance is too large
             }
           }
@@ -367,7 +367,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     // get poses
     auto features = convertMatToTDescriptor(descriptors);
     DBoW2::QueryResults results;
-    int numPosesToMatch = 5;
+    int numPosesToMatch = 15;
     dBowDatabase_.query(features, results, numPosesToMatch);
 
     std::set<uint64_t> possibleFrames;
@@ -439,4 +439,3 @@ void Frontend::buildDBoWDatabase()
 }
 
 }  // namespace arp
-
