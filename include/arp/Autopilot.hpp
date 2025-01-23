@@ -11,6 +11,7 @@
 #include <mutex>
 #include <Eigen/Core>
 #include <atomic>
+#include <deque>
 
 #include <ros/ros.h>
 
@@ -131,6 +132,31 @@ class Autopilot {
                           const arp::kinematics::RobotState& x);
 
   void resetIntegrators();
+  
+  /// \brief A Helper struct to send lists of waypoints.
+  struct Waypoint {
+    double x; ///< The World frame x coordinate.
+    double y; ///< The World frame y coordinate.
+    double z; ///< The World frame z coordinate.
+    double yaw; ///< The yaw angle of the robot w.r.t. the World frame.
+    double posTolerance; ///< The position tolerance: if within, it's considered reached.
+  };
+
+  /// \brief Command the drone to fly to these waypoints in order
+  ///        (front to back). When finished, the drone will hover at
+  ///        the last waypoint.
+  /// @param[in] waypoints Waypoint list.
+  void flyPath(const std::deque<Waypoint>& waypoints) {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    waypoints_ = waypoints;
+  }
+
+  /// \brief How many waypoints still have to be flown to?
+  /// \return The number of waypoints still not reached.
+  int waypointsLeft() {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    return waypoints_.size();
+  }
 
  protected:
   /// \brief Move the drone.
@@ -162,11 +188,16 @@ class Autopilot {
   std::mutex refMutex_; ///< We need to lock the reference access due to asynchronous arrival.
   std::atomic<bool> isAutomatic_; ///< True, if in automatic control mode.
 
+<<<<<<< HEAD
   // initialise 4 PID controllers for x, y, z, yaw
   arp::PidController pidX;
   arp::PidController pidY;
   arp::PidController pidZ;
   arp::PidController pidYaw;
+=======
+  std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
+  std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
+>>>>>>> f82c7e0703c8bc0c420fb3d58781450538f94954
 };
 
 } // namespace arp

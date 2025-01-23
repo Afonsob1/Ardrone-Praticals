@@ -44,6 +44,8 @@
     <!--param name="map" value="okvis2-slam-final_map_garching.csv" /-->
     <param name="occupancymap" value="occupancy-map_skokloster.dat" />
     <!--param name="occupancymap" value="occupancy-map_garching.dat" /-->
+    <!-- point B position -->
+    <rosparam param="pointB">[0.0, 1.0, 1.0]</rosparam>
   </node>
 
 </launch>
