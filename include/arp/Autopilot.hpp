@@ -188,16 +188,13 @@ class Autopilot {
   std::mutex refMutex_; ///< We need to lock the reference access due to asynchronous arrival.
   std::atomic<bool> isAutomatic_; ///< True, if in automatic control mode.
 
-<<<<<<< HEAD
   // initialise 4 PID controllers for x, y, z, yaw
   arp::PidController pidX;
   arp::PidController pidY;
   arp::PidController pidZ;
   arp::PidController pidYaw;
-=======
   std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
   std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
->>>>>>> f82c7e0703c8bc0c420fb3d58781450538f94954
 };
 
 } // namespace arp
