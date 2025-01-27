@@ -7,6 +7,7 @@
 
 #include <arp/Autopilot.hpp>
 #include <arp/kinematics/operators.hpp>
+#include <math.h>
 
 namespace arp {
 
@@ -232,8 +233,29 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   auto status = droneStatus();
   if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
     return;
-  }
-  
+  }  
+
+  std::lock_guard<std::mutex> l(waypointMutex_);
+  if(!waypoints_.empty()) {
+    // get the current waypoint from begining of the list
+    auto currentWaypoint = waypoints_.front();
+
+    // set pose reference from current waypoint
+    setPoseReference(currentWaypoint.x, currentWaypoint.y, currentWaypoint.z, currentWaypoint.yaw);
+
+    // check if current waypoint is reached
+    double curr_x, curr_y, curr_z, curr_yaw;
+    curr_x = x.t_WS[0];
+    curr_y = x.t_WS[1];
+    curr_z = x.t_WS[2];
+    curr_yaw = kinematics::yawAngle(x.q_WS);
+    if (sqrt( pow(curr_x - currentWaypoint.x,2) +  pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
+    {
+      // if reached, remove current waypoint
+      waypoints_.pop_front();
+    }
+  } 
+
   // compute error signals
   double x_ref, y_ref, z_ref, yaw_ref;
   getPoseReference(x_ref, y_ref, z_ref, yaw_ref);
