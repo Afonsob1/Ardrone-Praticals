@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- Provided by sleutene for convenience -->
+<launch>
+  <!-- Load interactive markers -->
+  <node pkg="rviz" type="rviz" name="rviz_control" args="-d $(find ardrone_practicals)/config/rviz_control.rviz"/>
+
+  <!-- Launch estimator / control arp_node. -->
+  <node name="arp_node" pkg="ardrone_practicals" type="arp_node"
+      output="screen">
+    <!-- Camera parameters-->
+    <param name="fu" value="390.598" />
+    <param name="fv" value="390.598" />
+    <param name="cu" value="319.5" />
+    <param name="cv" value="179." />
+    <param name="k1" value="0" />
+    <param name="k2" value="0" />
+    <param name="p1" value="0" />
+    <param name="p2" value="0" />
+    <rosparam param="T_SC">[0.0, 0.0, 1.0, 0.2, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
+    <!-- Make sure to match the map to the world loaded above! -->
+    <param name="map" value="okvis2-slam-final_map.csv" />
+    <!--param name="map" value="okvis2-slam-final_map_garching.csv" /-->
+    <param name="occupancymap" value="occupancy-map_skokloster.dat" />
+    <!--param name="occupancymap" value="occupancy-map_garching.dat" /-->
+  </node>
+
+</launch>
