@@ -51,6 +51,7 @@ class VisualInertialTracker
     estimator_ = &estimator;
   }
 
+
   /// \brief Set a visualisation callback.
   void setControllerCallback(const EstimatorCallback & controllerCallback) {
     controllerCallback_ = controllerCallback;

@@ -1,18 +1,24 @@
-
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <opencv2/core/core.hpp>
+#include <Eigen/Core>
+#include <queue>
 
 namespace arp {
     /// \brief Planner class
     class Planner {
         
         public:
-            Planner();
-            cv::Mat load_occupancy_map() const;
-            bool check_collision(double x, double y, double z) const;
+            Planner(const std::string& filename, int neighbours = 8);
+            cv::Mat load_occupancy_map(const std::string& filename) const;
+            bool check_collision(const Eigen::Vector3d & pos) const;
+            std::vector<Eigen::Vector3d> plan_path(Eigen::Vector3d & start, Eigen::Vector3d& goal) const;
 
+            Eigen::Vector3d convertToWorldCoord(const Eigen::Vector3d& pos) const;
+            Eigen::Vector3d convertToMapCoord(const Eigen::Vector3d& pos) const;
+            bool check_neighbourhood(Eigen::Vector3d&) const;
+            
         private:
             /// \brief Open map file.
             std::ifstream _mapFile;
@@ -25,5 +31,5 @@ namespace arp {
             cv::Mat _wrappedMapData;
 
             int _neighbours;
-    }
+    };
 }  // namespace arp

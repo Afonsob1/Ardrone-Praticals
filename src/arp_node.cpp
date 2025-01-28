@@ -27,7 +27,10 @@
 #include <arp/VisualInertialTracker.hpp>
 #include <arp/Frontend.hpp>
 #include <arp/StatePublisher.hpp>
-#include <arp/InteractiveMarkerServer.hpp>
+#include <arp/Planner.hpp>
+
+#include <Eigen/Core>
+//#include <arp/InteractiveMarkerServer.hpp>
 
 class Subscriber
 {
@@ -199,12 +202,26 @@ int main(int argc, char **argv)
         std::bind(&arp::Autopilot::controllerCallback, &autopilot,
         std::placeholders::_1, std::placeholders::_2));
 
-
-  // start rviz markers 
-  arp::InteractiveMarkerServer markerServer(autopilot);
-  markerServer.activate(0,0,0,0);
+  // // start rviz markers 
+  // arp::InteractiveMarkerServer markerServer(autopilot);
+  // markerServer.activate(0,0,0,0);
 
   auto last_time = std::chrono::steady_clock::now();
+  bool flyChallenge = false;
+
+  // Load map for planner
+  std::string occupancymapFile;
+  if (!nh.getParam("arp_node/occupancymap", occupancymapFile))
+    ROS_FATAL("error loading occupancymap parameter");
+  occupancymapFile = path+"/maps/" +occupancymapFile;
+  arp::Planner planner = arp::Planner(occupancymapFile);
+
+  // Get goal from parameters
+  Eigen::Vector3d goal(0,0,0);
+  std::vector<double> pointB;
+  if (!nh.getParam("arp_node/pointB", pointB))
+    ROS_FATAL("error loading pointB parameter");
+  goal << pointB[0], pointB[1], pointB[2];
 
   cv::Mat image;
   auto droneStatus = autopilot.droneStatus();
@@ -242,8 +259,6 @@ int main(int argc, char **argv)
         cv::putText(image, "   UP   ", cv::Point(540, 330), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
         cv::putText(image, "LF DW RT", cv::Point(540, 350), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255, 0, 0), 2);
       }
-
-
       
       // https://stackoverflow.com/questions/22702630/converting-cvmat-to-sdl-texture
       // I'm using SDL_TEXTUREACCESS_STREAMING because it's for a video player, you should
@@ -304,6 +319,13 @@ int main(int argc, char **argv)
       }
     }
 
+    if ((droneStatus == arp::Autopilot::Flying ||
+      droneStatus == arp::Autopilot::Hovering ||
+      droneStatus == arp::Autopilot::Flying2 ) && flyChallenge) {
+        std::cout << "Flying...  status=" << droneStatus << std::endl;
+        std::cout << "Waypoints Left: " << autopilot.waypointsLeft() << std::endl;
+    }
+
     // check keyboard to move the drone
     double forward = 0;
     double left = 0;
@@ -349,21 +371,66 @@ int main(int argc, char **argv)
 
     }
 
-    // enable automatic mode
-    if (state[SDL_SCANCODE_RCTRL]){      
-      double x, y, z, yaw;
-      autopilot.getPoseReference(x, y, z, yaw);
-      markerServer.activate(x, y, z, yaw);
+    // start challenge mode
+    if (state[SDL_SCANCODE_P] && !flyChallenge){
+      std::cout << "Starting Challenge Mode" << std::endl;
+      
+      // find start position
+      uint64_t timestamp;
+      arp::kinematics::RobotState currentState;
+      viEkf.getState(timestamp, currentState);
+      Eigen::Vector3d start(currentState.t_WS[0], currentState.t_WS[1], currentState.t_WS[2]);
+
+      // call planner and set waypoints
+      std::vector<Eigen::Vector3d> challengePath = planner.plan_path(start, goal);
+
+      // create waypoints dequeue
+      std::deque<arp::Autopilot::Waypoint> waypoints;
+
+      auto& last_wp = challengePath[0];
+
+      for (int i = 1; i < challengePath.size(); i++){
+        auto p = challengePath[i];
+        
+        arp::Autopilot::Waypoint wp;
+        wp.x = p[0];
+        wp.y = p[1];
+        wp.z = p[2];
+
+        // calculate yaw angle between two points
+        double dx = p[0] - last_wp[0];
+        double dy = p[1] - last_wp[1];
+
+        wp.yaw = atan2(dy, dx);
+        wp.posTolerance = 0.1; // TODO: is this in meters or centimeters??
+        waypoints.push_back(wp);
+        last_wp = p;
+      }
+
+      autopilot.flyPath(waypoints);
+
+      flyChallenge = true;
+
       autopilot.setAutomatic();
     }
 
+    // enable automatic mode
+    // if (state[SDL_SCANCODE_RCTRL]){
+    //   double x, y, z, yaw;
+    //   autopilot.getPoseReference(x, y, z, yaw);
+    //   //markerServer.activate(x, y, z, yaw);
+    //   autopilot.setAutomatic();
+    // }
+
+
     // enable manual mode
     if (state[SDL_SCANCODE_SPACE]){
-      markerServer.deactivate();
+      //markerServer.deactivate();
+      flyChallenge = false;
       autopilot.setManual();
     }
 
-    if(!autopilot.isAutomatic()) {
+    if (!autopilot.isAutomatic()) {
       autopilot.manualMove(forward, left, up, rotateLeft);
     }
   }

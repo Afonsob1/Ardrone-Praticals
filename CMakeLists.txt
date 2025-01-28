@@ -212,6 +212,7 @@ add_library(${PROJECT_NAME}
    src/ViEkf.cpp
    src/FBrisk.cpp
    src/PidController.cpp
+   src/Planner.cpp
 )
 add_dependencies(${PROJECT_NAME} brisk agast)
 target_link_libraries(${PROJECT_NAME}
