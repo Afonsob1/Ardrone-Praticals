@@ -10,7 +10,7 @@ namespace arp {
         _wrappedMapData = load_occupancy_map(filename);
     }
 
-    cv::Mat Planner::load_occupancy_map(const std::string& filename) const
+    cv::Mat Planner::load_occupancy_map(const std::string& filename)
     {
 
         std::ifstream _mapFile(filename, std::ios::in | std::ios::binary);
@@ -53,11 +53,11 @@ namespace arp {
 
                     // set new bigger cell value to 1 if one is occupied, or 0 if all are free
                     char maxVal = wrappedMapData.at<char>(oldX, oldY, oldZ);
-                    for(int dx = 0; dx <= 1; ++dx)
+                    for(int dx = 0; dx < SCALING_FACTOR; ++dx)
                     {
-                        for(int dy = 0; dy <= 1; ++dy)
+                        for(int dy = 0; dy < SCALING_FACTOR; ++dy)
                         {
-                            for(int dz = 0; dz <= 1; ++dz)
+                            for(int dz = 0; dz < SCALING_FACTOR; ++dz)
                             {
                                 const char val = wrappedMapData.at<char>(
                                     oldX + dx, oldY + dy, oldZ + dz
@@ -89,11 +89,11 @@ namespace arp {
 
     Eigen::Vector3d Planner::convertToWorldCoord(const Eigen::Vector3d & pos) const
     {
-        int x = pos[0]*(0.1*SCALING_FACTOR) + double(_sizes[0]-1)/2.0;
-        int y = pos[1]*(0.1*SCALING_FACTOR) + double(_sizes[1]-1)/2.0;
-        int z = pos[2]*(0.1*SCALING_FACTOR) + double(_sizes[2]-1)/2.0;
+        double i = (pos[0] - double(_sizes[0]-1)/2.0) * (0.1*SCALING_FACTOR);
+        double j = (pos[1] - double(_sizes[1]-1)/2.0) * (0.1*SCALING_FACTOR);
+        double k = (pos[2] - double(_sizes[2]-1)/2.0) * (0.1*SCALING_FACTOR);
 
-        return Eigen::Vector3d(x, y, z);
+        return Eigen::Vector3d(i, j, k);
     }
 
     Eigen::Vector3d Planner::convertToMapCoord(const Eigen::Vector3d & pos) const
@@ -117,7 +117,7 @@ namespace arp {
         
     }
 
-    double distance(Eigen::Vector3d & pos1, Eigen::Vector3d & pos2)
+    double distance(const Eigen::Vector3d & pos1, const Eigen::Vector3d & pos2)
     {
         return (pos1 - pos2).norm();
     }
