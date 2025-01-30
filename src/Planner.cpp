@@ -165,10 +165,7 @@ namespace arp {
         {
             auto curr = openSet.top();
             openSet.pop();
-            
-            int curr_idx = to_index(curr.second[0], curr.second[1], curr.second[2]);
-            if (curr.first > dist[curr_idx]) continue; // skip if is worse path
-            
+
             // check if we reached the goal
             if (curr.second[0] == goal.x() && curr.second[1] == goal.y() && curr.second[2] == goal.z())
             {
@@ -182,6 +179,8 @@ namespace arp {
                 std::reverse(path.begin(), path.end());
                 return path;
             }
+
+            int curr_idx = to_index(curr.second[0], curr.second[1], curr.second[2]);
             
             // explore neighbors
             for (int i = -_neighbours; i <= _neighbours; i++)
