@@ -163,25 +163,25 @@ namespace arp {
         
         while (!openSet.empty())
         {
-            auto curr = openSet.top().second;
+            auto curr = openSet.top();
             openSet.pop();
             
+            int curr_idx = to_index(curr.second[0], curr.second[1], curr.second[2]);
+            if (curr.first > dist[curr_idx]) continue; // skip if is worse path
+            
             // check if we reached the goal
-            if (curr[0] == goal.x() && curr[1] == goal.y() && curr[2] == goal.z())
+            if (curr.second[0] == goal.x() && curr.second[1] == goal.y() && curr.second[2] == goal.z())
             {
                 std::vector<Eigen::Vector3d> path;
-                while (curr[0] != start.x() || curr[1] != start.y() || curr[2] != start.z())
+                while (curr.second[0] != start.x() || curr.second[1] != start.y() || curr.second[2] != start.z())
                 {
-                    path.push_back(convertToWorldCoord(Eigen::Vector3d(curr[0], curr[1], curr[2])));
-                    int idx = to_index(curr[0], curr[1], curr[2]);
-                    curr = {prev_x[idx], prev_y[idx], prev_z[idx]};
+                    path.push_back(convertToWorldCoord(Eigen::Vector3d(curr.second[0], curr.second[1], curr.second[2])));
+                    int idx = to_index(curr.second[0], curr.second[1], curr.second[2]);
+                    curr.second = {prev_x[idx], prev_y[idx], prev_z[idx]};
                 }
                 std::reverse(path.begin(), path.end());
                 return path;
             }
-            
-            int curr_idx = to_index(curr[0], curr[1], curr[2]);
-            if (dist[curr_idx] < openSet.top().first) continue; // skip if we found a better path
             
             // explore neighbors
             for (int i = -_neighbours; i <= _neighbours; i++)
@@ -190,9 +190,9 @@ namespace arp {
                 {
                     for (int k = -_neighbours; k <= _neighbours; k++)
                     {
-                        int nx = curr[0] + i;
-                        int ny = curr[1] + j;
-                        int nz = curr[2] + k;
+                        int nx = curr.second[0] + i;
+                        int ny = curr.second[1] + j;
+                        int nz = curr.second[2] + k;
                         
                         if (nx < 0 || nx >= _wrappedMapData.size[0] || 
                             ny < 0 || ny >= _wrappedMapData.size[1] || 
@@ -209,9 +209,9 @@ namespace arp {
                         if (alt < dist[neighbor_idx])
                         {
                             dist[neighbor_idx] = alt;
-                            prev_x[neighbor_idx] = curr[0];
-                            prev_y[neighbor_idx] = curr[1];
-                            prev_z[neighbor_idx] = curr[2];
+                            prev_x[neighbor_idx] = curr.second[0];
+                            prev_y[neighbor_idx] = curr.second[1];
+                            prev_z[neighbor_idx] = curr.second[2];
                             double f = alt + std::sqrt(std::pow(nx - goal.x(), 2) + 
                                                      std::pow(ny - goal.y(), 2) + 
                                                      std::pow(nz - goal.z(), 2));
