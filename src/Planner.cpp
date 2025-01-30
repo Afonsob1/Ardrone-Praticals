@@ -2,6 +2,8 @@
 #include <ros/ros.h>
 #include <Eigen/Core>
 
+#define SCALING_FACTOR 2
+
 namespace arp {
     Planner::Planner(const std::string& filename, int neighbours) : _neighbours(neighbours/2)
     {
@@ -17,7 +19,6 @@ namespace arp {
         }
 
         // first read the map size along all the dimensions:
-        int _sizes[3];
         if(!_mapFile.read((char*)_sizes, 3*sizeof(int))) {
           ROS_FATAL_STREAM("could not read map file " << filename);
         }
@@ -30,36 +31,76 @@ namespace arp {
         _mapFile.close();
 
         // now wrap it with a cv::Mat for easier access:
-        cv::Mat _wrappedMapData(3, _sizes, CV_8SC1, _mapData);
+        cv::Mat wrappedMapData(3, _sizes, CV_8SC1, _mapData);
+
+        // reduce map size by merging neighboring cells
+        _sizes[0] = _sizes[0] / SCALING_FACTOR;
+        _sizes[1] = _sizes[1] / SCALING_FACTOR;
+        _sizes[2] = _sizes[2] / SCALING_FACTOR;
+
+        cv::Mat newMap(3, _sizes, CV_8SC1, cv::Scalar(0));
+
+        // compute new occupancy map
+        for(int z = 0; z < _sizes[2]; ++z)
+        {
+            for(int y = 0; y < _sizes[1]; ++y)
+            {
+                for(int x = 0; x < _sizes[0]; ++x)
+                {
+                    const int oldX = SCALING_FACTOR * x;
+                    const int oldY = SCALING_FACTOR * y;
+                    const int oldZ = SCALING_FACTOR * z;
+
+                    // set new bigger cell value to 1 if one is occupied, or 0 if all are free
+                    char maxVal = wrappedMapData.at<char>(oldX, oldY, oldZ);
+                    for(int dx = 0; dx <= 1; ++dx)
+                    {
+                        for(int dy = 0; dy <= 1; ++dy)
+                        {
+                            for(int dz = 0; dz <= 1; ++dz)
+                            {
+                                const char val = wrappedMapData.at<char>(
+                                    oldX + dx, oldY + dy, oldZ + dz
+                                );
+                                maxVal = std::max(maxVal, val);
+                            }
+                        }
+                    }
+
+                    // store max value in new map
+                    newMap.at<char>(x, y, z) = maxVal;
+                }
+            }
+        }
 
         // delete the map in the end
         delete[] _mapData;
-        return _wrappedMapData;
+        return newMap;
     }
 
     bool Planner::check_collision(const Eigen::Vector3d & pos) const
     {
-        int i = std::round(pos.x()/0.1+double(_sizes[0]-1)/2.0);
-        int j = std::round(pos.y()/0.1+double(_sizes[1]-1)/2.0);
-        int k = std::round(pos.z()/0.1+double(_sizes[2]-1)/2.0);
+        int i = std::round(pos.x()/(0.1*SCALING_FACTOR)+double(_sizes[0]-1)/2.0);
+        int j = std::round(pos.y()/(0.1*SCALING_FACTOR)+double(_sizes[1]-1)/2.0);
+        int k = std::round(pos.z()/(0.1*SCALING_FACTOR)+double(_sizes[2]-1)/2.0);
 
         return _wrappedMapData.at<char>(i, j, k) != 0;
     }
 
     Eigen::Vector3d Planner::convertToWorldCoord(const Eigen::Vector3d & pos) const
     {
-        int x = pos[0]*0.1 + double(_sizes[0]-1)/2.0;
-        int y = pos[1]*0.1 + double(_sizes[1]-1)/2.0;
-        int z = pos[2]*0.1 + double(_sizes[2]-1)/2.0;
+        int x = pos[0]*(0.1*SCALING_FACTOR) + double(_sizes[0]-1)/2.0;
+        int y = pos[1]*(0.1*SCALING_FACTOR) + double(_sizes[1]-1)/2.0;
+        int z = pos[2]*(0.1*SCALING_FACTOR) + double(_sizes[2]-1)/2.0;
 
         return Eigen::Vector3d(x, y, z);
     }
 
     Eigen::Vector3d Planner::convertToMapCoord(const Eigen::Vector3d & pos) const
     {
-        int i = std::round(pos.x()/0.1+double(_sizes[0]-1)/2.0);
-        int j = std::round(pos.y()/0.1+double(_sizes[1]-1)/2.0);
-        int k = std::round(pos.z()/0.1+double(_sizes[2]-1)/2.0);
+        int i = std::round(pos.x()/(0.1*SCALING_FACTOR)+double(_sizes[0]-1)/2.0);
+        int j = std::round(pos.y()/(0.1*SCALING_FACTOR)+double(_sizes[1]-1)/2.0);
+        int k = std::round(pos.z()/(0.1*SCALING_FACTOR)+double(_sizes[2]-1)/2.0);
 
         return Eigen::Vector3d(i, j, k);
     }
