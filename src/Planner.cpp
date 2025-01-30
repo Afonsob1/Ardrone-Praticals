@@ -1,6 +1,5 @@
 #include <arp/Planner.hpp>
 #include <ros/ros.h>
-#include <unordered_map>
 #include <Eigen/Core>
 
 namespace arp {
@@ -67,11 +66,9 @@ namespace arp {
 
     bool Planner::check_neighbourhood(Eigen::Vector3d & pos) const
     {
-        int neighbours_limit = std::ceil(_neighbours/2); 
-        
-        for(int i = -neighbours_limit; i <= neighbours_limit; i++)
-            for (int j = -neighbours_limit; j <= neighbours_limit; j++)          
-                for (int k = -neighbours_limit; k <= neighbours_limit; k++)
+        for(int i = -_neighbours; i <= _neighbours; i++)
+            for (int j = -_neighbours; j <= _neighbours; j++)          
+                for (int k = -_neighbours; k <= _neighbours; k++)
                     if (check_collision(Eigen::Vector3d(pos.x() + i, pos.y() + j, pos.z() + k)))
                         return true;
 
@@ -95,88 +92,95 @@ namespace arp {
 
     std::vector<Eigen::Vector3d> Planner::plan_path(Eigen::Vector3d & start_coord, Eigen::Vector3d& goal_coord) const
     {
-
-        int total_size = _wrappedMapData.size[0] * _wrappedMapData.size[1] * _wrappedMapData.size[2];
-
-        std::unordered_map<Eigen::Vector3d, double, Vector3dHash> dist;
-        std::unordered_map<Eigen::Vector3d, Eigen::Vector3d, Vector3dHash> prev;
-        std::unordered_map<Eigen::Vector3d, double, Vector3dHash> totDistEst;
-
-        // initialize dist, totDistEst and prev
-        for (int i = 0; i < _wrappedMapData.size[0]; i++){
-            for (int j = 0; j < _wrappedMapData.size[1]; j++){
-                for (int k = 0; k < _wrappedMapData.size[2]; k++){
-                    Eigen::Vector3d pos(i, j, k);
-                    dist[pos] = std::numeric_limits<double>::infinity();
-                    totDistEst[pos] = std::numeric_limits<double>::infinity();
-                    prev[pos] = Eigen::Vector3d(-1, -1, -1);
-                }
-            }
-        }
-        
-        // convert world to map coordinates
+        // convert coordinates first
         Eigen::Vector3d start = convertToMapCoord(start_coord);
         Eigen::Vector3d goal = convertToMapCoord(goal_coord);
         
-        // initialize start node
-        auto cmp = [](const std::pair<double, Eigen::Vector3d>& a, const std::pair<double, Eigen::Vector3d>& b) {
-            return a.first > b.first; // Use `>` for a min-heap (smaller `first` has higher priority).
+        const int nx = _wrappedMapData.size[0];
+        const int ny = _wrappedMapData.size[1];
+        const int nz = _wrappedMapData.size[2];
+        std::vector<double> dist(nx * ny * nz, std::numeric_limits<double>::infinity());
+        std::vector<int> prev_x(nx * ny * nz, -1);
+        std::vector<int> prev_y(nx * ny * nz, -1);
+        std::vector<int> prev_z(nx * ny * nz, -1);
+        
+        // helper function to convert 3D coordinates to 1D index
+        auto to_index = [&](int x, int y, int z) { return x + nx * (y + ny * z); };
+        
+        auto cmp = [](const std::pair<double, std::array<int, 3>>& a, 
+                      const std::pair<double, std::array<int, 3>>& b) {
+            return a.first > b.first;
         };
-
-        std::priority_queue<std::pair<double, Eigen::Vector3d>, 
-                            std::vector<std::pair<double, Eigen::Vector3d>>, 
+        
+        std::priority_queue<std::pair<double, std::array<int, 3>>,
+                            std::vector<std::pair<double, std::array<int, 3>>>,
                             decltype(cmp)> openSet(cmp);
-
-        openSet.emplace(0.0, start);
-        dist[start] = 0.0;
-        totDistEst[start] = distance(start, goal);
-
+        
+        int start_idx = to_index(start.x(), start.y(), start.z());
+        dist[start_idx] = 0.0;
+        openSet.emplace(distance(start, goal), std::array<int, 3>{(int)start.x(), (int)start.y(), (int)start.z()});
+        
         while (!openSet.empty())
         {
-            Eigen::Vector3d u = openSet.top().second;
+            auto [_, curr] = openSet.top();
             openSet.pop();
-
-            if (u == goal)
+            
+            // check if we reached the goal
+            if (curr[0] == goal.x() && curr[1] == goal.y() && curr[2] == goal.z())
             {
                 std::vector<Eigen::Vector3d> path;
-                while (u != start)
+                while (curr[0] != start.x() || curr[1] != start.y() || curr[2] != start.z())
                 {
-                    path.push_back(convertToWorldCoord(u));
-                    u = prev[u];
+                    path.push_back(convertToWorldCoord(Eigen::Vector3d(curr[0], curr[1], curr[2])));
+                    int idx = to_index(curr[0], curr[1], curr[2]);
+                    curr = {prev_x[idx], prev_y[idx], prev_z[idx]};
                 }
                 std::reverse(path.begin(), path.end());
-
                 return path;
             }
             
+            int curr_idx = to_index(curr[0], curr[1], curr[2]);
+            if (dist[curr_idx] < openSet.top().first) continue; // skip if we found a better path
+            
+            // explore neighbors
             for (int i = -_neighbours; i <= _neighbours; i++)
             {
                 for (int j = -_neighbours; j <= _neighbours; j++)
                 {
                     for (int k = -_neighbours; k <= _neighbours; k++)
                     {
-                        Eigen::Vector3d v(u.x() + i, u.y() + j, u.z() + k);
-                        if (v.x() < 0 || v.x() >= _wrappedMapData.size[0] || v.y() < 0 || v.y() >= _wrappedMapData.size[1] || v.z() < 0 || v.z() >= _wrappedMapData.size[2])
+                        int nx = curr[0] + i;
+                        int ny = curr[1] + j;
+                        int nz = curr[2] + k;
+                        
+                        if (nx < 0 || nx >= _wrappedMapData.size[0] || 
+                            ny < 0 || ny >= _wrappedMapData.size[1] || 
+                            nz < 0 || nz >= _wrappedMapData.size[2])
                             continue;
-
-                        if (check_neighbourhood(v))
+                        
+                        Eigen::Vector3d neighbor(nx, ny, nz);
+                        if (check_neighbourhood(neighbor))
                             continue;
-
-                        double alt = dist[u] + distance(u, v);  // actual distance from start to v
-
-                        if (alt < dist[v])
+                        
+                        int neighbor_idx = to_index(nx, ny, nz);
+                        double alt = dist[curr_idx] + std::sqrt(i*i + j*j + k*k);
+                        
+                        if (alt < dist[neighbor_idx])
                         {
-                            dist[v] = alt;
-                            totDistEst[v] = alt + distance(v, goal);
-                            openSet.emplace(totDistEst[v], v);
-                            prev[v] = u;
+                            dist[neighbor_idx] = alt;
+                            prev_x[neighbor_idx] = curr[0];
+                            prev_y[neighbor_idx] = curr[1];
+                            prev_z[neighbor_idx] = curr[2];
+                            double f = alt + std::sqrt(std::pow(nx - goal.x(), 2) + 
+                                                     std::pow(ny - goal.y(), 2) + 
+                                                     std::pow(nz - goal.z(), 2));
+                            openSet.emplace(f, std::array<int, 3>{nx, ny, nz});
                         }
                     }
                 }
             }
         }
-
-        // Path not found
+        
         return {};
     }
 } // namespace arp
