@@ -11,14 +11,14 @@ namespace arp {
         
         public:
             Planner(const std::string& filename, int neighbours = 8);
-            cv::Mat load_occupancy_map(const std::string& filename) const;
+            cv::Mat load_occupancy_map(const std::string& filename);
             bool check_collision(const Eigen::Vector3d & pos) const;
             std::vector<Eigen::Vector3d> plan_path(Eigen::Vector3d & start, Eigen::Vector3d& goal) const;
 
             Eigen::Vector3d convertToWorldCoord(const Eigen::Vector3d& pos) const;
             Eigen::Vector3d convertToMapCoord(const Eigen::Vector3d& pos) const;
             bool check_neighbourhood(Eigen::Vector3d&) const;
-            
+          
         private:
             /// \brief Open map file.
             std::ifstream _mapFile;

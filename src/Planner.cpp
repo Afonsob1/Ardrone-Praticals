@@ -163,7 +163,7 @@ namespace arp {
         
         while (!openSet.empty())
         {
-            auto [_, curr] = openSet.top();
+            auto curr = openSet.top().second;
             openSet.pop();
             
             // check if we reached the goal
