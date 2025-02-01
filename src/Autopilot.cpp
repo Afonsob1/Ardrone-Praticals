@@ -220,6 +220,7 @@ void Autopilot::resetIntegrators()
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
 {
+  static auto last_landed_time = std::chrono::steady_clock::now();
   // only do anything here, if automatic
   if (!isAutomatic_) {
     // keep resetting this to make sure we use the current state as reference as soon as sent to automatic mode
@@ -231,9 +232,20 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
   // only enable when in flight
   auto status = droneStatus();
-  if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
+  if (status == DroneStatus::Landed && !waypoints_.empty() ) {
+
+    // check if is landed for more than 1 second
+    auto current_time = std::chrono::steady_clock::now();
+    auto time_passed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_landed_time);
+    if (time_passed.count() > 2000) {
+      // if landed for more than 1 second, takeoff
+      takeoff();
+      resetIntegrators();
+      return;
+    }
+  }else if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
     return;
-  }  
+  }
 
   std::lock_guard<std::mutex> l(waypointMutex_);
   if(!waypoints_.empty()) {
@@ -249,10 +261,23 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     curr_y = x.t_WS[1];
     curr_z = x.t_WS[2];
     curr_yaw = kinematics::yawAngle(x.q_WS);
+
+    std::cout << " Current Position: " << curr_x << " " << curr_y << " " << curr_z << " | " 
+              << "Waypoint" << currentWaypoint.x << " " << currentWaypoint.y << " " << currentWaypoint.z << std::endl;
+
     if (sqrt( pow(curr_x - currentWaypoint.x,2) +  pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
     {
       // if reached, remove current waypoint
+
       waypoints_.pop_front();
+      if (currentWaypoint.land) {
+        
+        land();
+        last_landed_time = std::chrono::steady_clock::now();
+        resetIntegrators();
+        return;
+      }
+
     }
   } 
 

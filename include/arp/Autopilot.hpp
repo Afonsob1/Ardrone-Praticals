@@ -140,6 +140,7 @@ class Autopilot {
     double z; ///< The World frame z coordinate.
     double yaw; ///< The yaw angle of the robot w.r.t. the World frame.
     double posTolerance; ///< The position tolerance: if within, it's considered reached.
+    bool land; ///< Land at this waypoint.
   };
 
   /// \brief Command the drone to fly to these waypoints in order

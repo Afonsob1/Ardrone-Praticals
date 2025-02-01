@@ -5,7 +5,7 @@
 #define SCALING_FACTOR 2
 
 namespace arp {
-    Planner::Planner(const std::string& filename, int neighbours) : _neighbours(neighbours/2)
+    Planner::Planner(const std::string& filename, int neighbours) : _neighbours(neighbours/2/SCALING_FACTOR)
     {
         _wrappedMapData = load_occupancy_map(filename);
     }

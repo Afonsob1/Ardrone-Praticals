@@ -107,6 +107,90 @@ bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu,
   return success;
 }
 
+void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Planner& planner, Eigen::Vector3d & goal, bool& flyChallenge){
+
+      // find start position
+      uint64_t timestamp;
+      arp::kinematics::RobotState currentState;
+      viEkf.getState(timestamp, currentState);
+      Eigen::Vector3d start(currentState.t_WS[0], currentState.t_WS[1], 1);
+      goal[2] = 1; // set goal z to 0.5
+
+      
+      // call planner and set waypoints
+      std::vector<Eigen::Vector3d> challengePath = planner.plan_path(start, goal);
+      std::cout << "Path Length: " << challengePath.size() << std::endl;
+      if (challengePath.size() == 0){
+        std::cout << "No Path Found" << std::endl;
+        return;
+      }
+      std::cout << "Creating Waypoints" << std::endl;
+
+      // create waypoints dequeue
+      std::deque<arp::Autopilot::Waypoint> waypoints;
+
+      auto& last_wp = challengePath[0];
+
+      // path to Point B
+      for (int i = 1; i < challengePath.size(); i++){
+        auto p = challengePath[i];
+        
+        arp::Autopilot::Waypoint wp;
+        wp.x = p[0];
+        wp.y = p[1];
+        wp.z = p[2];
+
+        // calculate yaw angle between two points
+        double dx = p[0] - last_wp[0];
+        double dy = p[1] - last_wp[1];
+
+        wp.yaw = atan2(dy, dx);
+        wp.posTolerance = 0.3; // TODO: is this in meters or centimeters??
+        wp.land = false;
+        waypoints.push_back(wp);
+        last_wp = p;
+      }
+      waypoints.back().land = true;
+      waypoints.back().posTolerance = 0.1; // have a smaller tolerance for the last point
+
+      // Path back to point A
+      for (int i = challengePath.size()-2; i >= 0; i--){
+        auto p = challengePath[i];
+        
+        arp::Autopilot::Waypoint wp;
+        wp.x = p[0];
+        wp.y = p[1];
+        wp.z = p[2];
+
+        // calculate yaw angle between two points
+        double dx = p[0] - last_wp[0];
+        double dy = p[1] - last_wp[1];
+
+        wp.yaw = atan2(dy, dx);
+        wp.posTolerance = 0.3; // TODO: is this in meters or centimeters??
+        wp.land = false;
+        waypoints.push_back(wp);
+        last_wp = p;
+      }
+      waypoints.back().land = true;
+      waypoints.back().posTolerance = 0.1; // have a smaller tolerance for the last point
+
+      // print path TODO DELETE
+      for (auto& wp : waypoints){
+        std::cout << "x: " << wp.x << " y: " << wp.y << " z: " << wp.z << " yaw: " << wp.yaw << std::endl;
+        if (wp.land){
+          std::cout << "Land" << std::endl;
+        }
+
+      }
+
+      autopilot.flyPath(waypoints);
+
+      flyChallenge = true;
+
+      autopilot.setAutomatic();
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "arp_node");
@@ -371,47 +455,28 @@ int main(int argc, char **argv)
 
     }
 
-    // start challenge mode
-    if (state[SDL_SCANCODE_P] && !flyChallenge){
-      std::cout << "Starting Challenge Mode" << std::endl;
-      
-      // find start position
-      uint64_t timestamp;
-      arp::kinematics::RobotState currentState;
-      viEkf.getState(timestamp, currentState);
-      Eigen::Vector3d start(currentState.t_WS[0], currentState.t_WS[1], currentState.t_WS[2]);
-
-      // call planner and set waypoints
-      std::vector<Eigen::Vector3d> challengePath = planner.plan_path(start, goal);
-
-      // create waypoints dequeue
-      std::deque<arp::Autopilot::Waypoint> waypoints;
-
-      auto& last_wp = challengePath[0];
-
-      for (int i = 1; i < challengePath.size(); i++){
-        auto p = challengePath[i];
-        
-        arp::Autopilot::Waypoint wp;
-        wp.x = p[0];
-        wp.y = p[1];
-        wp.z = p[2];
-
-        // calculate yaw angle between two points
-        double dx = p[0] - last_wp[0];
-        double dy = p[1] - last_wp[1];
-
-        wp.yaw = atan2(dy, dx);
-        wp.posTolerance = 0.1; // TODO: is this in meters or centimeters??
-        waypoints.push_back(wp);
-        last_wp = p;
+    // Start challenge mode
+    if (state[SDL_SCANCODE_P] && !flyChallenge) {
+      if (autopilot.waypointsLeft() == 0) {
+      if (droneStatus == arp::Autopilot::Flying || 
+        droneStatus == arp::Autopilot::Hovering || 
+        droneStatus == arp::Autopilot::Flying2) {
+        std::cout << "Drone has to be landed to start challenge" << std::endl;
+      } else {
+        std::cout << "Starting Challenge Mode" << std::endl;
+        planAndFlyChallenge(autopilot, viEkf, planner, goal, flyChallenge);
       }
-
-      autopilot.flyPath(waypoints);
-
-      flyChallenge = true;
-
-      autopilot.setAutomatic();
+      } else {
+      if (droneStatus == arp::Autopilot::Flying || 
+        droneStatus == arp::Autopilot::Hovering || 
+        droneStatus == arp::Autopilot::Flying2) {
+        std::cout << "Resume challenge" << std::endl;
+        flyChallenge = true;
+        autopilot.setAutomatic();
+      } else {
+        std::cout << "Drone has to be flying to resume challenge" << std::endl;
+      }
+      }
     }
 
     // enable automatic mode
