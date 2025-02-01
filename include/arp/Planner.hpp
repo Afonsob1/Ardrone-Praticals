@@ -10,7 +10,7 @@ namespace arp {
     class Planner {
         
         public:
-            Planner(const std::string& filename, int neighbours = 8);
+            Planner(const std::string& filename, int neighbours = 1);
             cv::Mat load_occupancy_map(const std::string& filename);
             bool check_collision(const Eigen::Vector3d & pos) const;
             std::vector<Eigen::Vector3d> plan_path(Eigen::Vector3d & start, Eigen::Vector3d& goal) const;

@@ -2,10 +2,10 @@
 #include <ros/ros.h>
 #include <Eigen/Core>
 
-#define SCALING_FACTOR 2
+#define SCALING_FACTOR 8
 
 namespace arp {
-    Planner::Planner(const std::string& filename, int neighbours) : _neighbours(neighbours/2/SCALING_FACTOR)
+    Planner::Planner(const std::string& filename, int neighbours) : _neighbours(neighbours)
     {
         _wrappedMapData = load_occupancy_map(filename);
     }
@@ -77,16 +77,6 @@ namespace arp {
         return newMap;
     }
 
-    // returns true if there is a collision
-    bool Planner::check_collision(const Eigen::Vector3d & pos) const
-    {
-        int i = std::round(pos.x());
-        int j = std::round(pos.y());
-        int k = std::round(pos.z());
-        
-        return _wrappedMapData.at<char>(i, j, k) >= 0;  // occupied if log-odds is 0 or positive.
-    }
-
     // convert a map coordinate (grid index) to world coordinate (in meters)
     Eigen::Vector3d Planner::convertToWorldCoord(const Eigen::Vector3d & pos) const
     {
@@ -105,17 +95,6 @@ namespace arp {
         int k = std::round(pos.z() / (0.1 * SCALING_FACTOR) + double(_sizes[2] - 1) / 2.0);
 
         return Eigen::Vector3d(i, j, k);
-    }
-
-    bool Planner::check_neighbourhood(Eigen::Vector3d & pos) const
-    {
-        for (int i = -_neighbours; i <= _neighbours; i++)
-            for (int j = -_neighbours; j <= _neighbours; j++)
-                for (int k = -_neighbours; k <= _neighbours; k++)
-                    if (check_collision(Eigen::Vector3d(pos.x() + i, pos.y() + j, pos.z() + k)))
-                        return true;
-
-        return false;
     }
 
     double distance(const Eigen::Vector3d & pos1, const Eigen::Vector3d & pos2)
@@ -138,14 +117,17 @@ namespace arp {
         Eigen::Vector3d start = convertToMapCoord(start_coord);
         Eigen::Vector3d goal = convertToMapCoord(goal_coord);
         
+        // get max sizes of the map for each dimension
         const int nx = _wrappedMapData.size[0];
         const int ny = _wrappedMapData.size[1];
         const int nz = _wrappedMapData.size[2];
+
+        // initialize distance and previous node vectors
         std::vector<double> dist(nx * ny * nz, std::numeric_limits<double>::infinity());
         std::vector<int> prev_x(nx * ny * nz, -1);
         std::vector<int> prev_y(nx * ny * nz, -1);
         std::vector<int> prev_z(nx * ny * nz, -1);
-        
+
         // helper function to convert 3D coordinates to 1D index
         auto to_index = [&](int x, int y, int z) { return x + nx * (y + ny * z); };
         
@@ -154,13 +136,14 @@ namespace arp {
             return a.first > b.first;
         };
         
+        // distance as double, map coords as int array
         std::priority_queue<std::pair<double, std::array<int, 3>>,
                             std::vector<std::pair<double, std::array<int, 3>>>,
                             decltype(cmp)> openSet(cmp);
         
         int start_idx = to_index(start.x(), start.y(), start.z());
         dist[start_idx] = 0.0;
-        openSet.emplace(distance(start, goal), std::array<int, 3>{(int)start.x(), (int)start.y(), (int)start.z()});
+        openSet.emplace(distance(start, goal), std::array<int, 3>{(int)start.x(), (int)start.y(), (int)start.z()}); // distance as double, map coords as int array
         
         while (!openSet.empty())
         {
@@ -196,14 +179,17 @@ namespace arp {
                         int nx_idx = curr.second[0] + i;
                         int ny_idx = curr.second[1] + j;
                         int nz_idx = curr.second[2] + k;
+
+                        // this is the current cube position we are located -- skip
+                        if (i == 0 && j == 0 && k == 0)
+                            continue;
                         
                         if (nx_idx < 0 || nx_idx >= _wrappedMapData.size[0] || 
                             ny_idx < 0 || ny_idx >= _wrappedMapData.size[1] || 
                             nz_idx < 0 || nz_idx >= _wrappedMapData.size[2])
                             continue;
                         
-                        Eigen::Vector3d neighbor(nx_idx, ny_idx, nz_idx);
-                        if (check_neighbourhood(neighbor))
+                        if (_wrappedMapData.at<char>(nx_idx, ny_idx, nz_idx) > 0)
                             continue;
                         
                         int neighbor_idx = to_index(nx_idx, ny_idx, nz_idx);
