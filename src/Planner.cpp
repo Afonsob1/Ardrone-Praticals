@@ -66,7 +66,7 @@ namespace arp {
                     }
                     char avgVal = sumVal / (SCALING_FACTOR * SCALING_FACTOR * SCALING_FACTOR);
 
-                    // store max value in new map
+                    // store avg value in new map
                     newMap.at<char>(x, y, z) = avgVal;
                 }
             }
@@ -77,13 +77,14 @@ namespace arp {
         return newMap;
     }
 
+    // returns true if there is a collision
     bool Planner::check_collision(const Eigen::Vector3d & pos) const
     {
         int i = std::round(pos.x()/(0.1*SCALING_FACTOR)+double(_sizes[0]-1)/2.0);
         int j = std::round(pos.y()/(0.1*SCALING_FACTOR)+double(_sizes[1]-1)/2.0);
         int k = std::round(pos.z()/(0.1*SCALING_FACTOR)+double(_sizes[2]-1)/2.0);
 
-        return _wrappedMapData.at<char>(i, j, k) != 0;
+        return _wrappedMapData.at<char>(i, j, k) > 0;
     }
 
     Eigen::Vector3d Planner::convertToWorldCoord(const Eigen::Vector3d & pos) const
