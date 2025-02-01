@@ -51,24 +51,23 @@ namespace arp {
                     const int oldY = SCALING_FACTOR * y;
                     const int oldZ = SCALING_FACTOR * z;
 
-                    // set new bigger cell value to 1 if one is occupied, or 0 if all are free
-                    char maxVal = wrappedMapData.at<char>(oldX, oldY, oldZ);
+                    int sumVal = 0;
                     for(int dx = 0; dx < SCALING_FACTOR; ++dx)
                     {
                         for(int dy = 0; dy < SCALING_FACTOR; ++dy)
                         {
                             for(int dz = 0; dz < SCALING_FACTOR; ++dz)
                             {
-                                const char val = wrappedMapData.at<char>(
+                                sumVal += wrappedMapData.at<char>(
                                     oldX + dx, oldY + dy, oldZ + dz
                                 );
-                                maxVal = std::max(maxVal, val);
                             }
                         }
                     }
+                    char avgVal = sumVal / (SCALING_FACTOR * SCALING_FACTOR * SCALING_FACTOR);
 
                     // store max value in new map
-                    newMap.at<char>(x, y, z) = maxVal;
+                    newMap.at<char>(x, y, z) = avgVal;
                 }
             }
         }
