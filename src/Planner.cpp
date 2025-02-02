@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 
 #define SCALING_FACTOR 8
+#define SCALING_FACTOR_Z 4
 
 namespace arp {
     Planner::Planner(const std::string& filename, int neighbours) : _neighbours(neighbours)
@@ -36,27 +37,28 @@ namespace arp {
         // reduce map size by merging neighboring cells
         _sizes[0] = _sizes[0] / SCALING_FACTOR;
         _sizes[1] = _sizes[1] / SCALING_FACTOR;
-        _sizes[2] = _sizes[2] / SCALING_FACTOR;
+        _sizes[2] = _sizes[2] / SCALING_FACTOR_Z;
 
         cv::Mat newMap(3, _sizes, CV_8SC1, cv::Scalar(0));
 
         // compute new occupancy map
-        for(int z = 0; z < _sizes[2]; ++z)
+        for(int z = 0; z < _sizes[2]; z++)
         {
-            for(int y = 0; y < _sizes[1]; ++y)
+            for(int y = 0; y < _sizes[1]; y++)
             {
-                for(int x = 0; x < _sizes[0]; ++x)
+                for(int x = 0; x < _sizes[0]; x++)
                 {
                     const int oldX = SCALING_FACTOR * x;
                     const int oldY = SCALING_FACTOR * y;
-                    const int oldZ = SCALING_FACTOR * z;
+                    const int oldZ = SCALING_FACTOR_Z * z;
 
                     int sumVal = 0;
-                    for(int dx = 0; dx < SCALING_FACTOR; ++dx)
+                    // iterate over the SCALING_FACTOR x SCALING_FACTOR x SCALING_FACTOR_Z cube (8x8x4)
+                    for(int dx = 0; dx < SCALING_FACTOR; dx++)
                     {
-                        for(int dy = 0; dy < SCALING_FACTOR; ++dy)
+                        for(int dy = 0; dy < SCALING_FACTOR; dy++)
                         {
-                            for(int dz = 0; dz < SCALING_FACTOR; ++dz)
+                            for(int dz = 0; dz < SCALING_FACTOR_Z; dz++)
                             {
                                 sumVal += wrappedMapData.at<char>(
                                     oldX + dx, oldY + dy, oldZ + dz
@@ -64,7 +66,7 @@ namespace arp {
                             }
                         }
                     }
-                    char avgVal = sumVal / (SCALING_FACTOR * SCALING_FACTOR * SCALING_FACTOR);
+                    char avgVal = sumVal / (SCALING_FACTOR * SCALING_FACTOR * SCALING_FACTOR_Z);
 
                     // store avg value in new map
                     newMap.at<char>(x, y, z) = avgVal;
@@ -82,7 +84,7 @@ namespace arp {
     {
         double x = (pos[0] - double(_sizes[0] - 1) / 2.0) * (0.1 * SCALING_FACTOR);
         double y = (pos[1] - double(_sizes[1] - 1) / 2.0) * (0.1 * SCALING_FACTOR);
-        double z = (pos[2] - double(_sizes[2] - 1) / 2.0) * (0.1 * SCALING_FACTOR);
+        double z = (pos[2] - double(_sizes[2] - 1) / 2.0) * (0.1 * SCALING_FACTOR_Z);
 
         return Eigen::Vector3d(x, y, z);
     }
@@ -92,7 +94,7 @@ namespace arp {
     {
         int i = std::round(pos.x() / (0.1 * SCALING_FACTOR) + double(_sizes[0] - 1) / 2.0);
         int j = std::round(pos.y() / (0.1 * SCALING_FACTOR) + double(_sizes[1] - 1) / 2.0);
-        int k = std::round(pos.z() / (0.1 * SCALING_FACTOR) + double(_sizes[2] - 1) / 2.0);
+        int k = std::round(pos.z() / (0.1 * SCALING_FACTOR_Z) + double(_sizes[2] - 1) / 2.0);
 
         return Eigen::Vector3d(i, j, k);
     }
@@ -101,15 +103,6 @@ namespace arp {
     {
         return (pos1 - pos2).norm();
     }
-
-    struct Vector3dHash {
-        std::size_t operator()(const Eigen::Vector3d& v) const {
-            std::size_t hx = std::hash<double>()(v.x());
-            std::size_t hy = std::hash<double>()(v.y());
-            std::size_t hz = std::hash<double>()(v.z());
-            return hx ^ (hy << 1) ^ (hz << 2);
-        }
-    };
 
     std::vector<Eigen::Vector3d> Planner::plan_path(Eigen::Vector3d & start_coord, Eigen::Vector3d & goal_coord) const
     {
@@ -189,7 +182,7 @@ namespace arp {
                             nz_idx < 0 || nz_idx >= _wrappedMapData.size[2])
                             continue;
                         
-                        if (_wrappedMapData.at<char>(nx_idx, ny_idx, nz_idx) > 0)
+                        if (_wrappedMapData.at<char>(nx_idx, ny_idx, nz_idx) > 127)
                             continue;
                         
                         int neighbor_idx = to_index(nx_idx, ny_idx, nz_idx);

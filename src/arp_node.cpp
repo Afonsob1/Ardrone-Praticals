@@ -145,7 +145,7 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
         double dy = p[1] - last_wp[1];
 
         wp.yaw = atan2(dy, dx);
-        wp.posTolerance = 0.3; // TODO: is this in meters or centimeters??
+        wp.posTolerance = 0.3;
         wp.land = false;
         waypoints.push_back(wp);
         last_wp = p;
@@ -167,7 +167,7 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
         double dy = p[1] - last_wp[1];
 
         wp.yaw = atan2(dy, dx);
-        wp.posTolerance = 0.3; // TODO: is this in meters or centimeters??
+        wp.posTolerance = 0.3;
         wp.land = false;
         waypoints.push_back(wp);
         last_wp = p;
@@ -458,24 +458,24 @@ int main(int argc, char **argv)
     // Start challenge mode
     if (state[SDL_SCANCODE_P] && !flyChallenge) {
       if (autopilot.waypointsLeft() == 0) {
-      if (droneStatus == arp::Autopilot::Flying || 
-        droneStatus == arp::Autopilot::Hovering || 
-        droneStatus == arp::Autopilot::Flying2) {
-        std::cout << "Drone has to be landed to start challenge" << std::endl;
+        if (droneStatus == arp::Autopilot::Flying || 
+          droneStatus == arp::Autopilot::Hovering || 
+          droneStatus == arp::Autopilot::Flying2) {
+          std::cout << "Drone has to be landed to start challenge" << std::endl;
+        } else {
+          std::cout << "Starting Challenge Mode" << std::endl;
+          planAndFlyChallenge(autopilot, viEkf, planner, goal, flyChallenge);
+        }
       } else {
-        std::cout << "Starting Challenge Mode" << std::endl;
-        planAndFlyChallenge(autopilot, viEkf, planner, goal, flyChallenge);
-      }
-      } else {
-      if (droneStatus == arp::Autopilot::Flying || 
-        droneStatus == arp::Autopilot::Hovering || 
-        droneStatus == arp::Autopilot::Flying2) {
-        std::cout << "Resume challenge" << std::endl;
-        flyChallenge = true;
-        autopilot.setAutomatic();
-      } else {
-        std::cout << "Drone has to be flying to resume challenge" << std::endl;
-      }
+        if (droneStatus == arp::Autopilot::Flying || 
+          droneStatus == arp::Autopilot::Hovering || 
+          droneStatus == arp::Autopilot::Flying2) {
+          std::cout << "Resume challenge" << std::endl;
+          flyChallenge = true;
+          autopilot.setAutomatic();
+        } else {
+          std::cout << "Drone has to be flying to resume challenge" << std::endl;
+        }
       }
     }
 

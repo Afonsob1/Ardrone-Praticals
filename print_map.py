@@ -2,7 +2,6 @@
 
 import rospy
 import numpy as np
-import torch
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose, Point
@@ -30,26 +29,25 @@ def generate_markers(occupancy_map):
     marker_id = 0
     
     # print unique values
-    print ("Unique values in occupancy map", np.unique(occupancy_map))
+    print("Unique values in occupancy map", np.unique(occupancy_map))
     
-    # do upscale in occupancy map merge 2x2x2 to 1 use the max
-    upcale = 5
-    occupancy_map = torch.tensor(occupancy_map)
-    occupancy_map = occupancy_map.unfold(0, upcale, upcale).max(3)[0]
-    occupancy_map = occupancy_map.unfold(1, upcale, upcale).max(3)[0]
-    occupancy_map = occupancy_map.unfold(2, upcale, upcale).max(3)[0]
-    occupancy_map = occupancy_map.numpy()
+    # do upscale in occupancy map merge 2x2x2 to 1 use the average
+    upscale = 8
+    new_shape = (occupancy_map.shape[0] // upscale, occupancy_map.shape[1] // upscale, occupancy_map.shape[2] // upscale)
+    pooled_map = np.zeros(new_shape, dtype=np.float32)
     
+    for x in range(new_shape[0]):
+        for y in range(new_shape[1]):
+            for z in range(new_shape[2]):
+                pooled_map[x, y, z] = np.mean(occupancy_map[x*upscale:(x+1)*upscale, y*upscale:(y+1)*upscale, z*upscale:(z+1)*upscale])
     
+    occupancy_map = pooled_map
     
-    
-    print ("Occupancy Map ", occupancy_map.shape)
+    print("Occupancy Map ", occupancy_map.shape)
     
     for x, y, z in np.ndindex(occupancy_map.shape):
-        
-
         marker = Marker()
-        marker.header.frame_id = "map"
+        marker.header.frame_id = "world"
         marker.header.stamp = rospy.Time.now()
         marker.ns = "occupancy_voxels"
         marker.id = marker_id
@@ -57,27 +55,25 @@ def generate_markers(occupancy_map):
         marker.action = Marker.ADD
 
         # Set position
-        marker.pose.position.x = x * voxel_size*upcale - occupancy_map.shape[0] * voxel_size*upcale / 2
-        marker.pose.position.y = y * voxel_size*upcale - occupancy_map.shape[1] * voxel_size*upcale / 2
-        marker.pose.position.z = z * voxel_size*upcale - occupancy_map.shape[2] * voxel_size*upcale / 2
+        marker.pose.position.x = x * voxel_size * upscale - occupancy_map.shape[0] * voxel_size * upscale / 2
+        marker.pose.position.y = y * voxel_size * upscale - occupancy_map.shape[1] * voxel_size * upscale / 2
+        marker.pose.position.z = z * voxel_size * upscale - occupancy_map.shape[2] * voxel_size * upscale / 2
 
         # Set scale (size of each voxel)
-        marker.scale.x = voxel_size*upcale
-        marker.scale.y = voxel_size*upcale
-        marker.scale.z = voxel_size*upcale
+        marker.scale.x = voxel_size * upscale
+        marker.scale.y = voxel_size * upscale
+        marker.scale.z = voxel_size * upscale
 
-        #-5  -4  -3  -2  -1   0   1   2   3 127
-        
         if occupancy_map[x, y, z] == 0:
             continue
-        elif occupancy_map[x, y, z] > -2  and occupancy_map[x, y, z] < 127:
+        elif occupancy_map[x, y, z] > -2 and occupancy_map[x, y, z] < 127:
             marker.color.r = 0.0
             marker.color.g = 1.0
             marker.color.b = 0.0
             marker.color.a = 0.5
         elif occupancy_map[x, y, z] == 127:
             continue
-        else: 
+        else:
             continue
 
         marker_array.markers.append(marker)
