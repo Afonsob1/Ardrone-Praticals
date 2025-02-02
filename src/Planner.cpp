@@ -60,16 +60,16 @@ namespace arp {
                         {
                             for(int dz = 0; dz < SCALING_FACTOR_Z; dz++)
                             {
-                                sumVal += wrappedMapData.at<char>(
+                                sumVal += wrappedMapData.at<int8_t>(
                                     oldX + dx, oldY + dy, oldZ + dz
                                 );
                             }
                         }
                     }
-                    char avgVal = sumVal / (SCALING_FACTOR * SCALING_FACTOR * SCALING_FACTOR_Z);
+                    int8_t avgVal = (int8_t)(sumVal / (SCALING_FACTOR * SCALING_FACTOR * SCALING_FACTOR_Z));
 
                     // store avg value in new map
-                    newMap.at<char>(x, y, z) = avgVal;
+                    newMap.at<int8_t>(x, y, z) = avgVal;
                 }
             }
         }
@@ -111,18 +111,18 @@ namespace arp {
         Eigen::Vector3d goal = convertToMapCoord(goal_coord);
         
         // get max sizes of the map for each dimension
-        const int nx = _wrappedMapData.size[0];
-        const int ny = _wrappedMapData.size[1];
-        const int nz = _wrappedMapData.size[2];
+        const int nx_size = _wrappedMapData.size[0];
+        const int ny_size = _wrappedMapData.size[1];
+        const int nz_size = _wrappedMapData.size[2];
 
         // initialize distance and previous node vectors
-        std::vector<double> dist(nx * ny * nz, std::numeric_limits<double>::infinity());
-        std::vector<int> prev_x(nx * ny * nz, -1);
-        std::vector<int> prev_y(nx * ny * nz, -1);
-        std::vector<int> prev_z(nx * ny * nz, -1);
+        std::vector<double> dist(nx_size * ny_size * nz_size, std::numeric_limits<double>::infinity());
+        std::vector<int> prev_x(nx_size * ny_size * nz_size, -1);
+        std::vector<int> prev_y(nx_size * ny_size * nz_size, -1);
+        std::vector<int> prev_z(nx_size * ny_size * nz_size, -1);
 
         // helper function to convert 3D coordinates to 1D index
-        auto to_index = [&](int x, int y, int z) { return x + nx * (y + ny * z); };
+        auto to_index = [&](int x, int y, int z) { return x + nx_size * (y + ny_size * z); };
         
         auto cmp = [](const std::pair<double, std::array<int, 3>>& a, 
                     const std::pair<double, std::array<int, 3>>& b) {
@@ -183,7 +183,7 @@ namespace arp {
                             nz_idx < 0 || nz_idx >= _wrappedMapData.size[2])
                             continue;
                         
-                        if ((int)(_wrappedMapData.at<int8_t>(nx_idx, ny_idx, nz_idx)) > -4)
+                        if (_wrappedMapData.at<int8_t>(nx_idx, ny_idx, nz_idx) > -4)
                             continue;
                         
                         int neighbor_idx = to_index(nx_idx, ny_idx, nz_idx);
