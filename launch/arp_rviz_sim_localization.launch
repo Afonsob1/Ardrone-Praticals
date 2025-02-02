@@ -2,7 +2,20 @@
 <!-- Provided by sleutene for convenience -->
 <launch>
   <!-- Load interactive markers -->
+  <node name="rosbag_play" pkg="rosbag" type="play" args="/home/afonso/ardrone_ws/mrp-ws25-siemens-00.bag --loop"/> 
+  
   <node pkg="rviz" type="rviz" name="rviz_control" args="-d $(find ardrone_practicals)/config/rviz_control.rviz"/>
+
+  <!-- IPv4 address of your drone -->
+  <arg name="ip" default="192.168.1.1" />
+  <!-- Ultrasound frequency (7 or 8). -->
+  <arg name="freq" default="8" />
+
+  <group ns="ardrone_driver">
+    <param name="euler_angle_max" value="0.21" />
+    <param name="control_vz_max" value="700" />
+    <param name="control_yaw" value="1.75" />
+  </group>
 
   <!-- Launch estimator / control arp_node. -->
   <node name="arp_node" pkg="ardrone_practicals" type="arp_node"
@@ -22,6 +35,7 @@
     <!--param name="map" value="okvis2-slam-final_map_garching.csv" /-->
     <param name="occupancymap" value="occupancy-map_skokloster.dat" />
     <!--param name="occupancymap" value="occupancy-map_garching.dat" /-->
+    <rosparam param="pointB">[0.0, 2.0, 1.0]</rosparam>
   </node>
 
 </launch>
