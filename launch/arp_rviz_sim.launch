@@ -9,7 +9,7 @@
   </include>
   <!-- Emulate controller parameters-->
   <group ns="ardrone_driver">
-    <param name="euler_angle_max" value="0.21" />
+    <param name="euler_angle_max" value="0.5" />
     <param name="control_vz_max" value="700" />
     <param name="control_yaw" value="1.75" />
   </group>

@@ -32,8 +32,8 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
 
   PidController::Parameters p;
   p.k_p = 1; // 0.1 - 0.05
-  p.k_i = 0.01; // 0.00
-  p.k_d = 0.05; // 0.05
+  p.k_i = 0.1; // 0.00
+  p.k_d = 0.5; // 0.05
   pidX.setParameters(p);
   pidY.setParameters(p);
 

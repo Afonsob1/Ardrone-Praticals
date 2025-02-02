@@ -177,12 +177,13 @@ namespace arp {
                         if (i == 0 && j == 0 && k == 0)
                             continue;
                         
+                        // TODO check if this is needed, this is invalid since 0 is not the lowest value in the map coordinates
                         if (nx_idx < 0 || nx_idx >= _wrappedMapData.size[0] || 
                             ny_idx < 0 || ny_idx >= _wrappedMapData.size[1] || 
                             nz_idx < 0 || nz_idx >= _wrappedMapData.size[2])
                             continue;
                         
-                        if (_wrappedMapData.at<char>(nx_idx, ny_idx, nz_idx) > 127)
+                        if ((int)(_wrappedMapData.at<int8_t>(nx_idx, ny_idx, nz_idx)) > -4)
                             continue;
                         
                         int neighbor_idx = to_index(nx_idx, ny_idx, nz_idx);
