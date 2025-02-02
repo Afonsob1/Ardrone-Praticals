@@ -32,7 +32,7 @@
 #include <Eigen/Core>
 
 #define THRESHOLD_MIDDLE_WAYPOINTS 0.5
-#define THRESHOLD_LANDING 0.1 // have a smaller tolerance for the last point
+#define THRESHOLD_LANDING 0.3 // have a smaller tolerance for the last point
 
 class Subscriber
 {

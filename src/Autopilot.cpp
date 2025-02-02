@@ -31,9 +31,9 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
       nh_->resolveName("ardrone/flattrim"), 1);
 
   PidController::Parameters p;
-  p.k_p = 1; // 0.1 - 0.05
-  p.k_i = 0.1; // 0.00
-  p.k_d = 0.5; // 0.05
+  p.k_p = 0.5; // 0.1 - 0.05
+  p.k_i = 0.02; // 0.00
+  p.k_d = 0.1; // 0.05
   pidX.setParameters(p);
   pidY.setParameters(p);
 
@@ -274,8 +274,10 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
       // if last waypoint, land
       if (currentWaypoint.land) {
-        while(curr_z > 1) {
-          move(0, 0, -0.1, 0);
+        // TODO smoothen landing
+        while(curr_z > 0.4) {
+          curr_z = curr_z - 0.1;
+          move(curr_x, curr_y, curr_z, curr_yaw);
         }
         land();
         last_landed_time = std::chrono::steady_clock::now();
