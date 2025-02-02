@@ -15,7 +15,7 @@
     <param name="flight_without_shell" value="0" />
     <param name="altitude_max" value="1600" />
     <param name="altitude_min" value="50" />
-    <param name="euler_angle_max" value="0.21" />
+    <param name="euler_angle_max" value="0.5" />
     <param name="control_vz_max" value="700" />
     <param name="control_yaw" value="1.75" />
     <param name="detect_type" value="10" />
@@ -49,7 +49,7 @@
     <param name="p2" value="0" />
     <rosparam param="T_SC">[-0.00195087, -0.03257782,  0.99946730, 0.17409445, -0.99962338, -0.02729525, -0.00284087, 0.02255834, 0.02737326, -0.99909642, -0.03251230, 0.00174723, 0.00000000,  0.00000000,  0.00000000, 1.00000000]</rosparam>
     <!-- Make sure to load the right map! -->
-    <param name="map" value="okvis2-slam-final_map_dronelab.csv" />
+    <param name="map" value="okvis2-slam-final_map_challenge.csv" />
     <!-- point B position -->
     <rosparam param="pointB">[0.0, 0.0, 0.0]</rosparam>
   </node>
