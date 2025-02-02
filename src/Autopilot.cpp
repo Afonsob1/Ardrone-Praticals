@@ -221,7 +221,8 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
 {
   static auto last_landed_time = std::chrono::steady_clock::now();
-  // only do anything here, if automatic
+
+  // return if not in automatic mode
   if (!isAutomatic_) {
     // keep resetting this to make sure we use the current state as reference as soon as sent to automatic mode
     const double yaw = kinematics::yawAngle(x.q_WS);
@@ -230,8 +231,9 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     return;
   }
 
-  // only enable when in flight
   auto status = droneStatus();
+
+  // if landed and waypoints are available, takeoff
   if (status == DroneStatus::Landed && !waypoints_.empty() ) {
 
     // check if is landed for more than 1 second
@@ -243,12 +245,15 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
       resetIntegrators();
       return;
     }
-  }else if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
+  } else if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
     return;
   }
 
   std::lock_guard<std::mutex> l(waypointMutex_);
   if(!waypoints_.empty()) {
+
+    // TODO: dont get currentWaypoint and setPoseReference in every iteration -- only do once until reached and then get next
+
     // get the current waypoint from begining of the list
     auto currentWaypoint = waypoints_.front();
 
@@ -262,22 +267,21 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     curr_z = x.t_WS[2];
     curr_yaw = kinematics::yawAngle(x.q_WS);
 
-    std::cout << " Current Position: " << curr_x << " " << curr_y << " " << curr_z << " | " 
-              << "Waypoint" << currentWaypoint.x << " " << currentWaypoint.y << " " << currentWaypoint.z << std::endl;
-
-    if (sqrt( pow(curr_x - currentWaypoint.x,2) +  pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
+    if (sqrt( pow(curr_x - currentWaypoint.x,2) + pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
     {
       // if reached, remove current waypoint
-
       waypoints_.pop_front();
+
+      // if last waypoint, land
       if (currentWaypoint.land) {
-        
+        while(curr_z > 1) {
+          move(0, 0, -0.1, 0);
+        }
         land();
         last_landed_time = std::chrono::steady_clock::now();
         resetIntegrators();
         return;
       }
-
     }
   } 
 

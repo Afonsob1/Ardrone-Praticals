@@ -30,7 +30,9 @@
 #include <arp/Planner.hpp>
 
 #include <Eigen/Core>
-//#include <arp/InteractiveMarkerServer.hpp>
+
+#define THRESHOLD_MIDDLE_WAYPOINTS 0.5
+#define THRESHOLD_LANDING 0.1 // have a smaller tolerance for the last point
 
 class Subscriber
 {
@@ -113,9 +115,12 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
       uint64_t timestamp;
       arp::kinematics::RobotState currentState;
       viEkf.getState(timestamp, currentState);
-      Eigen::Vector3d start(currentState.t_WS[0], currentState.t_WS[1], 1);
-      goal[2] = 1; // set goal z to 0.5
 
+      // TODO: do we really need to set z = 1?
+      Eigen::Vector3d start(currentState.t_WS[0], currentState.t_WS[1], 1);
+
+      // TODO: do we really need this? maybe it's okay to leave it as is
+      goal[2] = 1;
       
       // call planner and set waypoints
       std::vector<Eigen::Vector3d> challengePath = planner.plan_path(start, goal);
@@ -145,13 +150,13 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
         double dy = p[1] - last_wp[1];
 
         wp.yaw = atan2(dy, dx);
-        wp.posTolerance = 0.3;
+        wp.posTolerance = THRESHOLD_MIDDLE_WAYPOINTS;
         wp.land = false;
         waypoints.push_back(wp);
         last_wp = p;
       }
       waypoints.back().land = true;
-      waypoints.back().posTolerance = 0.1; // have a smaller tolerance for the last point
+      waypoints.back().posTolerance = THRESHOLD_LANDING;
 
       // Path back to point A
       for (int i = challengePath.size()-2; i >= 0; i--){
@@ -167,27 +172,26 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
         double dy = p[1] - last_wp[1];
 
         wp.yaw = atan2(dy, dx);
-        wp.posTolerance = 0.3;
+        wp.posTolerance = THRESHOLD_MIDDLE_WAYPOINTS;
         wp.land = false;
         waypoints.push_back(wp);
         last_wp = p;
       }
       waypoints.back().land = true;
-      waypoints.back().posTolerance = 0.1; // have a smaller tolerance for the last point
+      waypoints.back().posTolerance = THRESHOLD_LANDING;
 
-      // print path TODO DELETE
-      for (auto& wp : waypoints){
-        std::cout << "x: " << wp.x << " y: " << wp.y << " z: " << wp.z << " yaw: " << wp.yaw << std::endl;
-        if (wp.land){
-          std::cout << "Land" << std::endl;
-        }
-
-      }
+      // print path
+      // for (auto& wp : waypoints){
+      //   std::cout << "x: " << wp.x << " y: " << wp.y << " z: " << wp.z << " yaw: " << wp.yaw << std::endl;
+      //   if (wp.land){
+      //     std::cout << "Land" << std::endl;
+      //   }
+      // }
 
       autopilot.flyPath(waypoints);
 
+      // TODO: why do we need to set this to true every time?
       flyChallenge = true;
-
       autopilot.setAutomatic();
 }
 
@@ -406,7 +410,6 @@ int main(int argc, char **argv)
     if ((droneStatus == arp::Autopilot::Flying ||
       droneStatus == arp::Autopilot::Hovering ||
       droneStatus == arp::Autopilot::Flying2 ) && flyChallenge) {
-        std::cout << "Flying...  status=" << droneStatus << std::endl;
         std::cout << "Waypoints Left: " << autopilot.waypointsLeft() << std::endl;
     }
 
