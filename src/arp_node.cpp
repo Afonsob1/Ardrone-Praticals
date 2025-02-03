@@ -31,9 +31,9 @@
 
 #include <Eigen/Core>
 
-#define THRESHOLD_MIDDLE_WAYPOINTS 0.5
+#define THRESHOLD_MIDDLE_WAYPOINTS 0.6
 #define THRESHOLD_LANDING 0.3 // have a smaller tolerance for the last point
-#define FLYING_HEIGHT 1 
+#define FLYING_HEIGHT 1.2
 #define LAND_HEIGHT 0.3
 
 class Subscriber
