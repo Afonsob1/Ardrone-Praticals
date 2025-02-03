@@ -33,6 +33,8 @@
 
 #define THRESHOLD_MIDDLE_WAYPOINTS 0.5
 #define THRESHOLD_LANDING 0.3 // have a smaller tolerance for the last point
+#define FLYING_HEIGHT 1 
+#define LAND_HEIGHT 0.3
 
 class Subscriber
 {
@@ -116,11 +118,9 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
       arp::kinematics::RobotState currentState;
       viEkf.getState(timestamp, currentState);
 
-      // TODO: do we really need to set z = 1?
-      Eigen::Vector3d start(currentState.t_WS[0], currentState.t_WS[1], 1);
+      Eigen::Vector3d start(currentState.t_WS[0], currentState.t_WS[1], FLYING_HEIGHT);
 
-      // TODO: do we really need this? maybe it's okay to leave it as is
-      goal[2] = 1;
+      goal[2] = FLYING_HEIGHT;
       
       // call planner and set waypoints
       std::vector<Eigen::Vector3d> challengePath = planner.plan_path(start, goal);
@@ -157,6 +157,7 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
       }
       waypoints.back().land = true;
       waypoints.back().posTolerance = THRESHOLD_LANDING;
+      waypoints.back().z = LAND_HEIGHT;
 
       // Path back to point A
       for (int i = challengePath.size()-2; i >= 0; i--){
@@ -179,18 +180,10 @@ void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Plan
       }
       waypoints.back().land = true;
       waypoints.back().posTolerance = THRESHOLD_LANDING;
-
-      // print path
-      // for (auto& wp : waypoints){
-      //   std::cout << "x: " << wp.x << " y: " << wp.y << " z: " << wp.z << " yaw: " << wp.yaw << std::endl;
-      //   if (wp.land){
-      //     std::cout << "Land" << std::endl;
-      //   }
-      // }
+      waypoints.back().z = LAND_HEIGHT;
 
       autopilot.flyPath(waypoints);
 
-      // TODO: why do we need to set this to true every time?
       flyChallenge = true;
       autopilot.setAutomatic();
 }
@@ -313,6 +306,10 @@ int main(int argc, char **argv)
 
   cv::Mat image;
   auto droneStatus = autopilot.droneStatus();
+
+  // challenge start time
+  std::chrono::steady_clock::time_point challenge_start;
+
   while (ros::ok()) {
     ros::spinOnce();
     ros::Duration dur(0.04);
@@ -467,6 +464,7 @@ int main(int argc, char **argv)
           std::cout << "Drone has to be landed to start challenge" << std::endl;
         } else {
           std::cout << "Starting Challenge Mode" << std::endl;
+          challenge_start = std::chrono::steady_clock::now();
           planAndFlyChallenge(autopilot, viEkf, planner, goal, flyChallenge);
         }
       } else {
@@ -480,6 +478,14 @@ int main(int argc, char **argv)
           std::cout << "Drone has to be flying to resume challenge" << std::endl;
         }
       }
+    }
+
+    if (flyChallenge && autopilot.waypointsLeft() == 0) {
+      auto current_time = std::chrono::steady_clock::now();
+      auto time_passed = std::chrono::duration_cast<std::chrono::seconds>(current_time - challenge_start);
+      std::cout << "Challenge completed in " << time_passed.count() << " s" << std::endl;
+      flyChallenge = false;
+      autopilot.setManual();
     }
 
     // enable automatic mode

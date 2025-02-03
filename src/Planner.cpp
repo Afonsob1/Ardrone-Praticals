@@ -150,12 +150,19 @@ namespace arp {
                 curr.second[2] == goal.z()
             ) {
                 std::vector<Eigen::Vector3d> path;
+                path.push_back(goal_coord);
+
+                // reconstruct path by following the previous nodes
+                curr.second = {prev_x[to_index(goal.x(), goal.y(), goal.z())], 
+                               prev_y[to_index(goal.x(), goal.y(), goal.z())], 
+                               prev_z[to_index(goal.x(), goal.y(), goal.z())]};
                 while (curr.second[0] != start.x() || curr.second[1] != start.y() || curr.second[2] != start.z())
                 {
                     path.push_back(convertToWorldCoord(Eigen::Vector3d(curr.second[0], curr.second[1], curr.second[2])));
                     int idx = to_index(curr.second[0], curr.second[1], curr.second[2]);
                     curr.second = {prev_x[idx], prev_y[idx], prev_z[idx]};
                 }
+                path.push_back(start_coord);
                 std::reverse(path.begin(), path.end());
                 return path;
             }

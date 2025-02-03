@@ -251,9 +251,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
   std::lock_guard<std::mutex> l(waypointMutex_);
   if(!waypoints_.empty()) {
-
-    // TODO: dont get currentWaypoint and setPoseReference in every iteration -- only do once until reached and then get next
-
+    
     // get the current waypoint from begining of the list
     auto currentWaypoint = waypoints_.front();
 
@@ -267,6 +265,11 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     curr_z = x.t_WS[2];
     curr_yaw = kinematics::yawAngle(x.q_WS);
 
+    std::cout << "Current: " << curr_x << " " << curr_y << " " << curr_z << " " << curr_yaw
+              << "Waypoint: " << currentWaypoint.x << " " << currentWaypoint.y << " " << currentWaypoint.z << " " << currentWaypoint.yaw
+               << std::endl;
+
+
     if (sqrt( pow(curr_x - currentWaypoint.x,2) + pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
     {
       // if reached, remove current waypoint
@@ -274,11 +277,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
       // if last waypoint, land
       if (currentWaypoint.land) {
-        // TODO smoothen landing
-        while(curr_z > 0.4) {
-          curr_z = curr_z - 0.1;
-          move(curr_x, curr_y, curr_z, curr_yaw);
-        }
+        
         land();
         last_landed_time = std::chrono::steady_clock::now();
         resetIntegrators();
