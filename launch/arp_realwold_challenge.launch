@@ -78,9 +78,8 @@
       0.00000000, 0.00000000, 0.00000000, 1.00000000]</rosparam>
 
     <!-- Map parameters -->
-    <param name="map" value="okvis2-slam-final_map_challenge.csv" />
-    <!-- TODO: occupancy map ??? -->
-    <param name="occupancymap" value="occupancy-map_garching.dat" />
+    <param name="map" value="okvis2-slam-final_map.csv" />
+    <param name="occupancymap" value="log_odds_occupancy_map.dat" />
 
     <!-- arp_node parameters -->
     <param name="THRESHOLD_MIDDLE_WAYPOINTS" value="0.6" />
