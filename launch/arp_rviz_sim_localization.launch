@@ -43,8 +43,6 @@
 
     -->
 
-    
-
     <param name="uniformityRadius" value="10"/>
     <param name="octaves" value="0"/>
     <param name="absoluteThreshold" value="100"/>

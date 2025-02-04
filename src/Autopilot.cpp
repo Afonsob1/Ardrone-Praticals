@@ -34,83 +34,71 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   double max_angle, max_vel_mm, max_yaw;
   if(!nh_->getParam("/ardrone_driver/euler_angle_max", max_angle)) {
     std::cout << "Error reading parameter euler_angle_max" << std::endl;
-    return;
   }
 
   if (!nh_->getParam("/ardrone_driver/control_vz_max", max_vel_mm)) {
     std::cout << "Error reading parameter control_vz_max" << std::endl;
-    return;
   }
 
   if (!nh_->getParam("/ardrone_driver/control_yaw", max_yaw)) {
     std::cout << "Error reading parameter control_yaw" << std::endl;
-    return;
   }
 
   // get values for PID X controllers from ros parameter
   double pid_X_k_p, pid_X_k_i, pid_X_k_d;
-  if(!nh_->getParam("/ardrone_practicals/pid_X_k_p", pid_X_k_p)) {
+  if(!nh_->getParam("/arp_node/pid_X_k_p", pid_X_k_p)) {
     std::cout << "Error reading parameter pid_X_k_p" << std::endl;
-    return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_X_k_i", pid_X_k_i)) {
+  if (!nh_->getParam("/arp_node/pid_X_k_i", pid_X_k_i)) {
     std::cout << "Error reading parameter pid_X_k_i" << std::endl;
-    return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_X_k_d", pid_X_k_d)) {
+  if (!nh_->getParam("/arp_node/pid_X_k_d", pid_X_k_d)) {
     std::cout << "Error reading parameter pid_X_k_d" << std::endl;
-    return;
   }
 
   // get values for PID Y controllers from ros parameter
   double pid_Y_k_p, pid_Y_k_i, pid_Y_k_d;
-  if(!nh_->getParam("/ardrone_practicals/pid_Y_k_p", pid_Y_k_p)) {
+  if(!nh_->getParam("/arp_node/pid_Y_k_p", pid_Y_k_p)) {
     std::cout << "Error reading parameter pid_Y_k_p" << std::endl;
-    return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_Y_k_i", pid_Y_k_i)) {
+  if (!nh_->getParam("/arp_node/pid_Y_k_i", pid_Y_k_i)) {
     std::cout << "Error reading parameter pid_Y_k_i" << std::endl;
-    return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_Y_k_d", pid_Y_k_d)) {
+  if (!nh_->getParam("/arp_node/pid_Y_k_d", pid_Y_k_d)) {
     std::cout << "Error reading parameter pid_Y_k_d" << std::endl;
-    return;
   }
 
   // get values for PID Z controllers from ros parameter
   double pid_Z_k_p, pid_Z_k_i, pid_Z_k_d;
-  if(!nh_->getParam("/ardrone_practicals/pid_Z_k_p", pid_Z_k_p)) {
+  if(!nh_->getParam("/arp_node/pid_Z_k_p", pid_Z_k_p)) {
     std::cout << "Error reading parameter pid_Z_k_p" << std::endl;
-    return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_Z_k_i", pid_Z_k_i)) {
+  if (!nh_->getParam("/arp_node/pid_Z_k_i", pid_Z_k_i)) {
     std::cout << "Error reading parameter pid_Z_k_i" << std::endl;
-    return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_Z_k_d", pid_Z_k_d)) {
+  if (!nh_->getParam("/arp_node/pid_Z_k_d", pid_Z_k_d)) {
     std::cout << "Error reading parameter pid_Z_k_d" << std::endl;
-    return;
   }
 
   // get values for PID Yaw controllers from ros parameter
   double pid_Yaw_k_p, pid_Yaw_k_i, pid_Yaw_k_d;
-  if(!nh_->getParam("/ardrone_practicals/pid_Yaw_k_p", pid_Yaw_k_p)) {
+  if(!nh_->getParam("/arp_node/pid_Yaw_k_p", pid_Yaw_k_p)) {
     std::cout << "Error reading parameter pid_Yaw_k_p" << std::endl;
     return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_Yaw_k_i", pid_Yaw_k_i)) {
+  if (!nh_->getParam("/arp_node/pid_Yaw_k_i", pid_Yaw_k_i)) {
     std::cout << "Error reading parameter pid_Yaw_k_i" << std::endl;
     return;
   }
 
-  if (!nh_->getParam("/ardrone_practicals/pid_Yaw_k_d", pid_Yaw_k_d)) {
+  if (!nh_->getParam("/arp_node/pid_Yaw_k_d", pid_Yaw_k_d)) {
     std::cout << "Error reading parameter pid_Yaw_k_d" << std::endl;
     return;
   }
