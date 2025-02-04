@@ -30,24 +30,7 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   srvFlattrim_ = nh_->serviceClient<std_srvs::Empty>(
       nh_->resolveName("ardrone/flattrim"), 1);
 
-  PidController::Parameters p;
-  p.k_p = 0.5; // 0.1 - 0.05
-  p.k_i = 0.02; // 0.00
-  p.k_d = 0.1; // 0.05
-  pidX.setParameters(p);
-  pidY.setParameters(p);
-
-  p.k_p = 1; //0.5 - 1.0
-  p.k_i = 0.02; // 0.0
-  p.k_d = 0.1; // 0.0
-  pidZ.setParameters(p);
-
-  p.k_p = 0.8; // 1.5
-  p.k_i = 0.03; // 0.0
-  p.k_d = 0.15; // 0.0
-  pidYaw.setParameters(p);
-
-  // get ros parameter
+  // get max values for PID controllers from ros parameter
   double max_angle, max_vel_mm, max_yaw;
   if(!nh_->getParam("/ardrone_driver/euler_angle_max", max_angle)) {
     std::cout << "Error reading parameter euler_angle_max" << std::endl;
@@ -63,6 +46,98 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
     std::cout << "Error reading parameter control_yaw" << std::endl;
     return;
   }
+
+  // get values for PID X controllers from ros parameter
+  double pid_X_k_p, pid_X_k_i, pid_X_k_d;
+  if(!nh_->getParam("/ardrone_practicals/pid_X_k_p", pid_X_k_p)) {
+    std::cout << "Error reading parameter pid_X_k_p" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_X_k_i", pid_X_k_i)) {
+    std::cout << "Error reading parameter pid_X_k_i" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_X_k_d", pid_X_k_d)) {
+    std::cout << "Error reading parameter pid_X_k_d" << std::endl;
+    return;
+  }
+
+  // get values for PID Y controllers from ros parameter
+  double pid_Y_k_p, pid_Y_k_i, pid_Y_k_d;
+  if(!nh_->getParam("/ardrone_practicals/pid_Y_k_p", pid_Y_k_p)) {
+    std::cout << "Error reading parameter pid_Y_k_p" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_Y_k_i", pid_Y_k_i)) {
+    std::cout << "Error reading parameter pid_Y_k_i" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_Y_k_d", pid_Y_k_d)) {
+    std::cout << "Error reading parameter pid_Y_k_d" << std::endl;
+    return;
+  }
+
+  // get values for PID Z controllers from ros parameter
+  double pid_Z_k_p, pid_Z_k_i, pid_Z_k_d;
+  if(!nh_->getParam("/ardrone_practicals/pid_Z_k_p", pid_Z_k_p)) {
+    std::cout << "Error reading parameter pid_Z_k_p" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_Z_k_i", pid_Z_k_i)) {
+    std::cout << "Error reading parameter pid_Z_k_i" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_Z_k_d", pid_Z_k_d)) {
+    std::cout << "Error reading parameter pid_Z_k_d" << std::endl;
+    return;
+  }
+
+  // get values for PID Yaw controllers from ros parameter
+  double pid_Yaw_k_p, pid_Yaw_k_i, pid_Yaw_k_d;
+  if(!nh_->getParam("/ardrone_practicals/pid_Yaw_k_p", pid_Yaw_k_p)) {
+    std::cout << "Error reading parameter pid_Yaw_k_p" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_Yaw_k_i", pid_Yaw_k_i)) {
+    std::cout << "Error reading parameter pid_Yaw_k_i" << std::endl;
+    return;
+  }
+
+  if (!nh_->getParam("/ardrone_practicals/pid_Yaw_k_d", pid_Yaw_k_d)) {
+    std::cout << "Error reading parameter pid_Yaw_k_d" << std::endl;
+    return;
+  }
+
+  PidController::Parameters p_X;
+  p_X.k_p = pid_X_k_p;
+  p_X.k_i = pid_X_k_i;
+  p_X.k_d = pid_X_k_d;
+  pidX.setParameters(p_X);
+
+  PidController::Parameters p_Y;
+  p_Y.k_p = pid_Y_k_p;
+  p_Y.k_i = pid_Y_k_i;
+  p_Y.k_d = pid_Y_k_d;
+  pidY.setParameters(p_Y);
+
+  PidController::Parameters p_Z;
+  p_Z.k_p = pid_Z_k_p;
+  p_Z.k_i = pid_Z_k_i;
+  p_Z.k_d = pid_Z_k_d;
+  pidZ.setParameters(p_Z);
+
+  PidController::Parameters p_Yaw;
+  p_Yaw.k_p = pid_Yaw_k_p;
+  p_Yaw.k_i = pid_Yaw_k_i;
+  p_Yaw.k_d = pid_Yaw_k_d;
+  pidYaw.setParameters(p_Yaw);
 
   double max_vel = max_vel_mm / 1000.0;
 

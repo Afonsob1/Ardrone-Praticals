@@ -31,11 +31,6 @@
 
 #include <Eigen/Core>
 
-#define THRESHOLD_MIDDLE_WAYPOINTS 0.6
-#define THRESHOLD_LANDING 0.3 // have a smaller tolerance for the last point
-#define FLYING_HEIGHT 1.2
-#define LAND_HEIGHT 0.3
-
 class Subscriber
 {
  public:
@@ -138,7 +133,44 @@ bool getBriskParameters(ros::NodeHandle& nh, double& uniformityRadius, int& octa
   return success;
 }
 
-void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Planner& planner, Eigen::Vector3d & goal, bool& flyChallenge){
+bool getPlanAndFlyParameters(ros::NodeHandle& nh, double& THRESHOLD_MIDDLE_WAYPOINTS, double& THRESHOLD_LANDING, double& FLYING_HEIGHT, double& LAND_HEIGHT)
+{
+  bool success = true;
+  
+  if (!nh.getParam("/ardrone_practicals/THRESHOLD_MIDDLE_WAYPOINTS", THRESHOLD_MIDDLE_WAYPOINTS)) {
+    ROS_WARN("Failed to get param 'THRESHOLD_MIDDLE_WAYPOINTS'");
+    success = false;
+  }
+  if (!nh.getParam("/ardrone_practicals/THRESHOLD_LANDING", THRESHOLD_LANDING)) {
+    ROS_WARN("Failed to get param 'THRESHOLD_LANDING'");
+    success = false;
+  }
+  if (!nh.getParam("/ardrone_practicals/FLYING_HEIGHT", FLYING_HEIGHT)) {
+    ROS_WARN("Failed to get param 'FLYING_HEIGHT'");
+    success = false;
+  }
+  if (!nh.getParam("/ardrone_practicals/LAND_HEIGHT", LAND_HEIGHT)) {
+    ROS_WARN("Failed to get param 'LAND_HEIGHT'");
+    success = false;
+  }
+
+  ROS_INFO("Plan and Fly Challenge parameters:");
+  ROS_INFO("THRESHOLD_MIDDLE_WAYPOINTS: %f, THRESHOLD_LANDING: %d ", THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING);
+  ROS_INFO("FLYING_HEIGHT: %f, LAND_HEIGHT: %d ", FLYING_HEIGHT, LAND_HEIGHT);
+  return success;
+}
+
+void planAndFlyChallenge(
+  arp::Autopilot& autopilot,
+  arp::ViEkf& viEkf,
+  arp::Planner& planner,
+  Eigen::Vector3d & goal,
+  bool& flyChallenge,
+  double& THRESHOLD_MIDDLE_WAYPOINTS,
+  double& THRESHOLD_LANDING,
+  double& FLYING_HEIGHT,
+  double& LAND_HEIGHT)
+{
 
       // find start position
       uint64_t timestamp;
@@ -259,6 +291,9 @@ int main(int argc, char **argv)
   double uniformityRadius, absoluteThreshold;
   int octaves, maxNumKpt;
   getBriskParameters(nh, uniformityRadius, octaves, absoluteThreshold, maxNumKpt);
+
+  double THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING, FLYING_HEIGHT, LAND_HEIGHT;
+  getPlanAndFlyParameters(nh, THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING, FLYING_HEIGHT, LAND_HEIGHT)
 
   // set up frontend -- use parameters as loaded in previous practical
   arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2,
@@ -497,7 +532,7 @@ int main(int argc, char **argv)
         } else {
           std::cout << "Starting Challenge Mode" << std::endl;
           challenge_start = std::chrono::steady_clock::now();
-          planAndFlyChallenge(autopilot, viEkf, planner, goal, flyChallenge);
+          planAndFlyChallenge(autopilot, viEkf, planner, goal, flyChallenge, THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING, FLYING_HEIGHT, LAND_HEIGHT);
         }
       } else {
         if (droneStatus == arp::Autopilot::Flying || 
