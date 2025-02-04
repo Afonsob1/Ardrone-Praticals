@@ -20,7 +20,7 @@
   <!-- Launch estimator / control arp_node. -->
   <node name="arp_node" pkg="ardrone_practicals" type="arp_node"
       output="screen">
-    <!-- Camera parameters-->
+    
     <param name="fu" value="390.598" />
     <param name="fv" value="390.598" />
     <param name="cu" value="319.5" />
@@ -29,28 +29,17 @@
     <param name="k2" value="0" />
     <param name="p1" value="0" />
     <param name="p2" value="0" />
+    <rosparam param="T_SC">[0.0, 0.0, 1.0, 0.2, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
+    <!-- Make sure to match the map to the world loaded above! -->
+    <param name="map" value="okvis2-slam-final_map.csv" />
+    <param name="mapFocalLength" value="390.598" />
 
-<!-- 
-    
-    <param name="fu" value="390.598" />
-    <param name="fv" value="390.598" />
-    <param name="cu" value="315.30547" />
-    <param name="cv" value="205.56111" />
-    <param name="k1" value="-0.564841" />
-    <param name="k2" value="0.365631" />
-    <param name="p1" value="-0.011796" />
-    <param name="p2" value="-0.000933" />
-
-    -->
 
     <param name="uniformityRadius" value="10"/>
     <param name="octaves" value="0"/>
     <param name="absoluteThreshold" value="100"/>
     <param name="maxNumKpt" value="2000"/>
 
-    <rosparam param="T_SC">[0.0, 0.0, 1.0, 0.2, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
-    <!-- Make sure to match the map to the world loaded above! -->
-    <param name="map" value="okvis2-slam-final_map.csv" />
     <!--param name="map" value="okvis2-slam-final_map_garching.csv" /-->
     <!--<param name="occupancymap" value="occupancy-map_skokloster.dat" /> -->
     <param name="occupancymap" value="occupancy-map_garching.dat" />
