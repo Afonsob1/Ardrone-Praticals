@@ -63,7 +63,7 @@
     <param name="THRESHOLD_MIDDLE_WAYPOINTS" value="0.6" />
     <param name="THRESHOLD_LANDING" value="0.3" /> <!-- have a smaller tolerance for the last point -->
     <param name="FLYING_HEIGHT" value="1.2" />
-    <param name="LAND_HEIGHT" value="0.1" />
+    <param name="LAND_HEIGHT" value="0.3" />
 
     <!-- Autopilot parameters - PID X -->
     <param name="pid_X_k_p" value="0.5" />
