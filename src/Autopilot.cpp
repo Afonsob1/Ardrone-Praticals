@@ -302,7 +302,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     // check if is landed for more than 1 second
     auto current_time = std::chrono::steady_clock::now();
     auto time_passed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_landed_time);
-    if (time_passed.count() > 2000) {
+    if (time_passed.count() > 3000) {
       // if landed for more than 1 second, takeoff
       takeoff();
       resetIntegrators();
