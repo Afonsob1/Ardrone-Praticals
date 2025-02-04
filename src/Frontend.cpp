@@ -31,7 +31,8 @@ Frontend::Frontend(int imageWidth, int imageHeight,
                                    double imageCenterU, double imageCenterV,
                                    double k1, double k2, double p1, double p2,
                                    double uniformityRadius, size_t octaves, 
-                                    double absoluteThreshold, size_t maxNumKpt
+                                    double absoluteThreshold, size_t maxNumKpt,
+                                    double mapFocalLength
                                    ) :
   camera_(imageWidth, imageHeight, focalLengthU, focalLengthV, imageCenterU,
           imageCenterV,
@@ -83,7 +84,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
       }
     }
   }
-  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, (focalLengthU + focalLengthV) / 2);
+  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, mapFocalLength);
 }
 
 bool  Frontend::loadMap(std::string path) {
@@ -346,7 +347,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
                               DetectionVec & detections, kinematics::Transformation & T_CW, 
                               cv::Mat & visualisationImage, bool needsReInitialisation)
 {
-  
   detections.clear(); // make sure empty
   // to gray:
   cv::Mat grayScale;
@@ -417,7 +417,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   for(const auto& detection : detections) {
     cv::circle(visualisationImage,
                  cv::Point2d(detection.keypoint.x(), detection.keypoint.y()),
-                 3, cv::Scalar(0,255,0), -1, CV_AA); // red
+                 3, cv::Scalar(0,255,0), -1, CV_AA); // green
   }
 
   return isRansacSuccess;

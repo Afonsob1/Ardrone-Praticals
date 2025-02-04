@@ -79,7 +79,7 @@ class Subscriber
 
 /// @brief get camera parameters
 /// @return true on success
-bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu, double& cv, double& k1, double& k2, double& p1, double&p2){
+bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu, double& cv, double& k1, double& k2, double& p1, double&p2, double& mapFocalLength){
   bool success = true;
   
   auto getParam = [&nh, &success](const std::string& param_name, double& param_value) {
@@ -97,12 +97,14 @@ bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu,
   getParam("arp_node/k2", k2);
   getParam("arp_node/p1", p1);
   getParam("arp_node/p2", p2);
+  getParam("arp_node/mapFocalLength", mapFocalLength);
 
   ROS_INFO("Camera parameters:");
   ROS_INFO("fu: %f, fv: %f ", fu, fv);
   ROS_INFO("cu: %f, cv: %f ", cu, cv);
   ROS_INFO("k1: %f, k2: %f ", k1, k2);
   ROS_INFO("p1: %f, p2: %f ", p1, p2);
+  ROS_INFO("mapFocalLength: %f", mapFocalLength);
   return success;
 }
 
@@ -279,8 +281,8 @@ int main(int argc, char **argv)
 
 
   // read camera params
-  double fu=0, fv=0, cu=0, cv=0, k1=0, k2=0, p1=0, p2=0;
-  getCameraParameters(nh, fu, fv, cu, cv, k1, k2, p1, p2);
+  double fu=0, fv=0, cu=0, cv=0, k1=0, k2=0, p1=0, p2=0, mapFocalLength=0.0;
+  getCameraParameters(nh, fu, fv, cu, cv, k1, k2, p1, p2, mapFocalLength);
 
   // init camera
   auto camera = arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion>(
@@ -297,7 +299,7 @@ int main(int argc, char **argv)
 
   // set up frontend -- use parameters as loaded in previous practical
   arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2,
-                          uniformityRadius, octaves, absoluteThreshold, maxNumKpt);
+                          uniformityRadius, octaves, absoluteThreshold, maxNumKpt, mapFocalLength);
 
   // load map
   std::string path = ros::package::getPath("ardrone_practicals");

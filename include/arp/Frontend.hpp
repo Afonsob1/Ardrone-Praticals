@@ -51,7 +51,8 @@ class Frontend
                            double imageCenterV, double k1, double k2, double p1,
                            double p2,
                            double uniformityRadius, size_t octaves, 
-                           double absoluteThreshold, size_t maxNumKpt);
+                           double absoluteThreshold, size_t maxNumKpt,
+                           double mapFocalLength);
 
   /// \brief Load the map
   /// \parameter path The full path to the map file.

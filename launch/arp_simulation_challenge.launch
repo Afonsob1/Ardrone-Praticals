@@ -97,7 +97,7 @@
     <param name="maxNumKpt" value="1000" /> <!-- 2000 -->
 
     <!-- point B position -->
-    <rosparam param="pointB">[0.0, 1.0, 1.0]</rosparam>
+    <rosparam param="pointB">[0.0, 10.0, 1.0]</rosparam>
   </node>
 
 </launch>
