@@ -155,8 +155,8 @@ bool getPlanAndFlyParameters(ros::NodeHandle& nh, double& THRESHOLD_MIDDLE_WAYPO
   }
 
   ROS_INFO("Plan and Fly Challenge parameters:");
-  ROS_INFO("THRESHOLD_MIDDLE_WAYPOINTS: %f, THRESHOLD_LANDING: %d ", THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING);
-  ROS_INFO("FLYING_HEIGHT: %f, LAND_HEIGHT: %d ", FLYING_HEIGHT, LAND_HEIGHT);
+  ROS_INFO("THRESHOLD_MIDDLE_WAYPOINTS: %f, THRESHOLD_LANDING: %f ", THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING);
+  ROS_INFO("FLYING_HEIGHT: %f, LAND_HEIGHT: %f ", FLYING_HEIGHT, LAND_HEIGHT);
   return success;
 }
 
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
   getBriskParameters(nh, uniformityRadius, octaves, absoluteThreshold, maxNumKpt);
 
   double THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING, FLYING_HEIGHT, LAND_HEIGHT;
-  getPlanAndFlyParameters(nh, THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING, FLYING_HEIGHT, LAND_HEIGHT)
+  getPlanAndFlyParameters(nh, THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING, FLYING_HEIGHT, LAND_HEIGHT);
 
   // set up frontend -- use parameters as loaded in previous practical
   arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2,
