@@ -111,6 +111,33 @@ bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu,
   return success;
 }
 
+bool getBriskParameters(ros::NodeHandle& nh, double& uniformityRadius, int& octaves, double& absoluteThreshold, int& maxNumKpt){
+  bool success = true;
+  
+ if (!nh.getParam("arp_node/uniformityRadius", uniformityRadius)) {
+    ROS_WARN("Failed to get param 'uniformityRadius'");
+    success = false;
+  }
+  if (!nh.getParam("arp_node/octaves", octaves)) {
+    ROS_WARN("Failed to get param 'octaves'");
+    success = false;
+  }
+  if (!nh.getParam("arp_node/absoluteThreshold", absoluteThreshold)) {
+    ROS_WARN("Failed to get param 'absoluteThreshold'");
+    success = false;
+  }
+  if (!nh.getParam("arp_node/maxNumKpt", maxNumKpt)) {
+    ROS_WARN("Failed to get param 'maxNumKpt'");
+    success = false;
+  }
+
+
+  ROS_INFO("BRISK parameters:");
+  ROS_INFO("uniformityRadius: %f, octaves: %d ", uniformityRadius, octaves);
+  ROS_INFO("absoluteThreshold: %f, maxNumKpt: %d ", absoluteThreshold, maxNumKpt);
+  return success;
+}
+
 void planAndFlyChallenge(arp::Autopilot& autopilot, arp::ViEkf& viEkf, arp::Planner& planner, Eigen::Vector3d & goal, bool& flyChallenge){
 
       // find start position
@@ -228,9 +255,14 @@ int main(int argc, char **argv)
         640, 360, fu, fv, cu, cv, arp::cameras::RadialTangentialDistortion(k1,k2,p1,p2));
   camera.initialiseUndistortMaps();
   bool undistorted = false;
+  
+  double uniformityRadius, absoluteThreshold;
+  int octaves, maxNumKpt;
+  getBriskParameters(nh, uniformityRadius, octaves, absoluteThreshold, maxNumKpt);
 
   // set up frontend -- use parameters as loaded in previous practical
-  arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2);
+  arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2,
+                          uniformityRadius, octaves, absoluteThreshold, maxNumKpt);
 
   // load map
   std::string path = ros::package::getPath("ardrone_practicals");

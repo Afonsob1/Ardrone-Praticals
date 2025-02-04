@@ -29,7 +29,10 @@ namespace arp {
 Frontend::Frontend(int imageWidth, int imageHeight,
                                    double focalLengthU, double focalLengthV,
                                    double imageCenterU, double imageCenterV,
-                                   double k1, double k2, double p1, double p2) :
+                                   double k1, double k2, double p1, double p2,
+                                   double uniformityRadius, size_t octaves, 
+                                    double absoluteThreshold, size_t maxNumKpt
+                                   ) :
   camera_(imageWidth, imageHeight, focalLengthU, focalLengthV, imageCenterU,
           imageCenterV,
           arp::cameras::RadialTangentialDistortion(k1, k2, p1, p2))
@@ -50,7 +53,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
   distCoeffs_.at<double>(3) = p2;
   
   // BRISK detector and descriptor
-  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(40, 2, 50, 1000)); //  10, 0, 100, 2000 
+  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(uniformityRadius, octaves, absoluteThreshold, maxNumKpt)); //  10, 0, 100, 2000 
   extractor_.reset(new brisk::BriskDescriptorExtractor(true, false));
   
   // leverage camera-aware BRISK (caution: needs the *_new* maps...)

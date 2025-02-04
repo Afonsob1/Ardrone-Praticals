@@ -39,6 +39,12 @@
     <param name="p1" value="0" />
     <param name="p2" value="0" />
     <rosparam param="T_SC">[0.0, 0.0, 1.0, 0.2, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
+
+    <param name="uniformityRadius" value="40"/>
+    <param name="octaves" value="2"/>
+    <param name="absoluteThreshold" value="50"/>
+    <param name="maxNumKpt" value="1000"/>
+
     <!-- Make sure to match the map to the world loaded above! -->
     <param name="map" value="okvis2-slam-final_map_skokloster.csv" />
     <!--param name="map" value="okvis2-slam-final_map_garching.csv" /-->
