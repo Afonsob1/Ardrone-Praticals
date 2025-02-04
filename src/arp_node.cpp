@@ -137,19 +137,19 @@ bool getPlanAndFlyParameters(ros::NodeHandle& nh, double& THRESHOLD_MIDDLE_WAYPO
 {
   bool success = true;
   
-  if (!nh.getParam("/ardrone_practicals/THRESHOLD_MIDDLE_WAYPOINTS", THRESHOLD_MIDDLE_WAYPOINTS)) {
+  if (!nh.getParam("arp_node//THRESHOLD_MIDDLE_WAYPOINTS", THRESHOLD_MIDDLE_WAYPOINTS)) {
     ROS_WARN("Failed to get param 'THRESHOLD_MIDDLE_WAYPOINTS'");
     success = false;
   }
-  if (!nh.getParam("/ardrone_practicals/THRESHOLD_LANDING", THRESHOLD_LANDING)) {
+  if (!nh.getParam("arp_node//THRESHOLD_LANDING", THRESHOLD_LANDING)) {
     ROS_WARN("Failed to get param 'THRESHOLD_LANDING'");
     success = false;
   }
-  if (!nh.getParam("/ardrone_practicals/FLYING_HEIGHT", FLYING_HEIGHT)) {
+  if (!nh.getParam("arp_node//FLYING_HEIGHT", FLYING_HEIGHT)) {
     ROS_WARN("Failed to get param 'FLYING_HEIGHT'");
     success = false;
   }
-  if (!nh.getParam("/ardrone_practicals/LAND_HEIGHT", LAND_HEIGHT)) {
+  if (!nh.getParam("arp_node//LAND_HEIGHT", LAND_HEIGHT)) {
     ROS_WARN("Failed to get param 'LAND_HEIGHT'");
     success = false;
   }
