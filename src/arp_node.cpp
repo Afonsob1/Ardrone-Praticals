@@ -352,6 +352,11 @@ int main(int argc, char **argv)
         std::bind(&arp::Autopilot::controllerCallback, &autopilot,
         std::placeholders::_1, std::placeholders::_2));
 
+  // set callback to track lost state
+  visualInertialTracker.setLostCallback(
+        std::bind(&arp::Autopilot::setTrackerLost, &autopilot,
+        std::placeholders::_1));
+
   // // start rviz markers 
   // arp::InteractiveMarkerServer markerServer(autopilot);
   // markerServer.activate(0,0,0,0);

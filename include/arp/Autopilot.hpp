@@ -69,6 +69,9 @@ class Autopilot {
       }
   }
 
+  void setTrackerLost(bool lost);
+  bool getTrackerLost();
+
   float droneBattery();
 
   /// \brief Set to automatic control mode.
@@ -196,6 +199,9 @@ class Autopilot {
   arp::PidController pidYaw;
   std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
   std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
+
+  std::mutex trackerMutex_;
+  bool trackerLost_;
 };
 
 } // namespace arp

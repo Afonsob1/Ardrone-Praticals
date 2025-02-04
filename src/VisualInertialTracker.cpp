@@ -109,6 +109,10 @@ void VisualInertialTracker::processingLoop()
           estimator_->addKeypointMeasurements(
               cameraMeasurement.timestampMicroseconds, detections);
         } else if (ransacSuccess){
+          if(lostCallback_) {
+            std::cout << "========================================================= NOT" << std::endl;
+            lostCallback_(false);
+          }
           // use initialisation from RANSAC to init state
           T_WS = T_CW.inverse() * estimator_->T_SC().inverse();
           kinematics::RobotState x;
@@ -128,6 +132,9 @@ void VisualInertialTracker::processingLoop()
           std::cout << "init"<< std::endl;
           estimator_->initialiseState(cameraMeasurement.timestampMicroseconds,
                                       x, P);
+        } else if(lostCallback_) {
+          std::cout << "========================================================= LOST" << std::endl;
+          lostCallback_(true);
         }
       }
 

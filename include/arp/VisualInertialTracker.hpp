@@ -51,6 +51,9 @@ class VisualInertialTracker
     estimator_ = &estimator;
   }
 
+  void setLostCallback(std::function<void(bool)> callback) {
+    lostCallback_ = callback;
+  }
 
   /// \brief Set a visualisation callback.
   void setControllerCallback(const EstimatorCallback & controllerCallback) {
@@ -111,6 +114,7 @@ class VisualInertialTracker
   threadsafe::ThreadSafeQueue<StateEstimate, Eigen::aligned_allocator<StateEstimate>> controllerQueue_;
   threadsafe::ThreadSafeQueue<StateEstimate, Eigen::aligned_allocator<StateEstimate>> visualisationQueue_;
 
+  std::function<void(bool)> lostCallback_;
   EstimatorCallback controllerCallback_;
   EstimatorCallback visualisationCallback_;
   

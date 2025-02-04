@@ -12,7 +12,8 @@
 namespace arp {
 
 Autopilot::Autopilot(ros::NodeHandle& nh)
-    : nh_(&nh)
+    : nh_(&nh),
+      trackerLost_(false)
 {
   isAutomatic_ = false; // always start in manual mode  
 
@@ -279,6 +280,17 @@ void Autopilot::resetIntegrators()
   pidYaw.resetIntegrator();
 }
 
+void Autopilot::setTrackerLost(bool lost)
+{
+  std::lock_guard<std::mutex> l(trackerMutex_);
+  trackerLost_ = lost;
+}
+
+bool Autopilot::getTrackerLost() {
+  std::lock_guard<std::mutex> l(trackerMutex_);
+  return trackerLost_;
+}
+
 /// The callback from the estimator that sends control outputs to the drone
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
@@ -333,14 +345,16 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                << std::endl;
 
 
-    if (sqrt( pow(curr_x - currentWaypoint.x,2) + pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
+    if (sqrt(
+      pow(curr_x - currentWaypoint.x,2) +
+      pow(curr_y - currentWaypoint.y,2) +
+      pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
     {
       // if reached, remove current waypoint
       waypoints_.pop_front();
 
       // if last waypoint, land
       if (currentWaypoint.land) {
-        
         land();
         last_landed_time = std::chrono::steady_clock::now();
         resetIntegrators();
@@ -349,21 +363,41 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     }
   } 
 
-  // compute error signals
+  // get current pose reference
   double x_ref, y_ref, z_ref, yaw_ref;
   getPoseReference(x_ref, y_ref, z_ref, yaw_ref);
-  auto pos_ref = Eigen::Vector3d(x_ref, y_ref, z_ref);
 
+  // compute position error in world coords
+  auto pos_ref = Eigen::Vector3d(x_ref, y_ref, z_ref);
   auto R = x.q_WS.toRotationMatrix();
   auto pos_error = R.transpose() * (pos_ref - x.t_WS);
 
+  // compute yaw error
   double yaw_estimated = arp::kinematics::yawAngle(x.q_WS);
   double yaw_error = yaw_ref - yaw_estimated;
-  
   if (yaw_error > M_PI) {
     yaw_error -= 2*M_PI;
   } else if (yaw_error < -M_PI) {
     yaw_error += 2*M_PI;
+  }
+
+  // if is lost, gradually increment the yaw
+  if (getTrackerLost()) {
+
+    std::cout << "Tracker Lost: [" << x_ref << ", " << y_ref << ", " << z_ref <<  ", " << yaw_ref << "]" << std::endl;
+
+    if (z_ref < 0.5) {
+      z_ref = 1;
+    } else {
+      yaw_ref += M_PI/2;
+      // wrap new_yaw to limits
+      if(yaw_ref > M_PI) yaw_ref -= 2 * M_PI;
+      else if(yaw_ref < -M_PI) yaw_ref += 2 * M_PI;
+    }
+    std::cout << "Tracker Lost setting to: [" << x_ref << ", " << y_ref << ", " << z_ref << ", " << yaw_ref << "]" << std::endl;
+
+    move(x_ref, y_ref, z_ref, yaw_ref);
+    return;
   }
 
   // compute error signal time derivatives
@@ -378,7 +412,6 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
   // send to move
   move(u_x, u_y, u_z, u_yaw);
-
 }
 
 }  // namespace arp
