@@ -216,12 +216,14 @@ void planAndFlyChallenge(
         waypoints.push_back(wp);
         last_wp = p;
       }
-      waypoints.back().land = true;
+      waypoints.back().land = false;
       waypoints.back().posTolerance = THRESHOLD_LANDING;
-      waypoints.back().z = LAND_HEIGHT;
+      waypoints.back().z = FLYING_HEIGHT;
+      
+      waypoints.push_back(arp::Autopilot::Waypoint{waypoints.back().x, waypoints.back().y, LAND_HEIGHT, waypoints.back().yaw, THRESHOLD_LANDING, true});
 
       // Path back to point A
-      for (int i = challengePath.size()-2; i >= 0; i--){
+      for (int i = challengePath.size()-1; i >= 0; i--){
         auto p = challengePath[i];
         
         arp::Autopilot::Waypoint wp;
@@ -239,9 +241,11 @@ void planAndFlyChallenge(
         waypoints.push_back(wp);
         last_wp = p;
       }
-      waypoints.back().land = true;
+      waypoints.back().land = false;
       waypoints.back().posTolerance = THRESHOLD_LANDING;
-      waypoints.back().z = LAND_HEIGHT;
+      waypoints.back().z = FLYING_HEIGHT;
+      
+      waypoints.push_back(arp::Autopilot::Waypoint{0, 0, LAND_HEIGHT, 0, THRESHOLD_LANDING, true});
 
       autopilot.flyPath(waypoints);
 

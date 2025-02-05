@@ -283,7 +283,7 @@ void Autopilot::resetIntegrators()
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
 {
-  static auto last_landed_time = std::chrono::steady_clock::now();
+  static auto last_landed_time = ros::Time::now().toSec();
 
   // return if not in automatic mode
   if (!isAutomatic_) {
@@ -300,10 +300,10 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   if (status == DroneStatus::Landed && !waypoints_.empty() ) {
 
     // check if is landed for more than 1 second
-    auto current_time = std::chrono::steady_clock::now();
-    auto time_passed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_landed_time);
-    if (time_passed.count() > 3000) {
-      // if landed for more than 1 second, takeoff
+    auto current_time = ros::Time::now().toSec();
+    auto time_passed = current_time - last_landed_time;
+    if (time_passed > 3) {
+      // if landed for more than 3 second, takeoff
       takeoff();
       resetIntegrators();
       return;
@@ -331,6 +331,24 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     std::cout << "Current: " << curr_x << " " << curr_y << " " << curr_z << " " << curr_yaw
               << "Waypoint: " << currentWaypoint.x << " " << currentWaypoint.y << " " << currentWaypoint.z << " " << currentWaypoint.yaw
                << std::endl;
+    // check if we reached an further waypoint before of the current one
+    double smallest_distance = sqrt( pow(curr_x - currentWaypoint.x,2) + pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2));
+    auto best_wp = waypoints_.begin();
+    for (auto it = waypoints_.begin(); it != waypoints_.end(); it++) {
+      auto wp = *it;
+      if (wp.land) {
+        break;
+      }
+
+      if (sqrt( pow(curr_x - wp.x,2) + pow(curr_y - wp.y,2) + pow(curr_z - wp.z, 2)) <= smallest_distance) {
+        best_wp = it;
+        smallest_distance = sqrt( pow(curr_x - wp.x,2) + pow(curr_y - wp.y,2) + pow(curr_z - wp.z, 2));
+      }
+    }
+
+    // remove waypoints before the best one
+    waypoints_.erase(waypoints_.begin(), best_wp);
+    currentWaypoint = waypoints_.front();
 
 
     if (sqrt( pow(curr_x - currentWaypoint.x,2) + pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2)) < currentWaypoint.posTolerance)
@@ -342,7 +360,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
       if (currentWaypoint.land) {
         
         land();
-        last_landed_time = std::chrono::steady_clock::now();
+        last_landed_time = ros::Time::now().toSec();
         resetIntegrators();
         return;
       }
