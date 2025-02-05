@@ -98,6 +98,7 @@ bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu,
   getParam("arp_node/p1", p1);
   getParam("arp_node/p2", p2);
   getParam("arp_node/mapFocalLength", mapFocalLength);
+  getParam("arp_node/maxPixelDistance", maxPixelDistance);
 
   ROS_INFO("Camera parameters:");
   ROS_INFO("fu: %f, fv: %f ", fu, fv);
@@ -105,6 +106,7 @@ bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu,
   ROS_INFO("k1: %f, k2: %f ", k1, k2);
   ROS_INFO("p1: %f, p2: %f ", p1, p2);
   ROS_INFO("mapFocalLength: %f", mapFocalLength);
+  ROS_INFO("maxPixelDistance: %f", maxPixelDistance);
   return success;
 }
 
@@ -304,7 +306,8 @@ int main(int argc, char **argv)
 
   // set up frontend -- use parameters as loaded in previous practical
   arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2,
-                          uniformityRadius, octaves, absoluteThreshold, maxNumKpt, mapFocalLength);
+                          uniformityRadius, octaves, absoluteThreshold, maxNumKpt, mapFocalLength,
+                          maxPixelDistance);
 
   // load map
   std::string path = ros::package::getPath("ardrone_practicals");

@@ -65,6 +65,9 @@
     <param name="FLYING_HEIGHT" value="1.2" />
     <param name="LAND_HEIGHT" value="0.3" />
 
+    <!-- Frontend parameters -->
+    <param name="maxPixelDistance" value="5" /> <!-- had 30 -->
+
     <!-- Autopilot parameters - PID X -->
     <param name="pid_X_k_p" value="1.0" />
     <param name="pid_X_k_i" value="0.05" />

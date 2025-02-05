@@ -32,7 +32,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
                                    double k1, double k2, double p1, double p2,
                                    double uniformityRadius, size_t octaves, 
                                     double absoluteThreshold, size_t maxNumKpt,
-                                    double mapFocalLength
+                                    double mapFocalLength, size_t maxPixelDistance
                                    ) :
   camera_(imageWidth, imageHeight, focalLengthU, focalLengthV, imageCenterU,
           imageCenterV,
@@ -302,7 +302,7 @@ bool Frontend::detectFrames(
           if (T_CW != nullptr) {
             // check pixel distance from projected image point to keypoint
             double pixelDistance = (keypoint - imagePoint).norm();
-            if (pixelDistance > 10) {
+            if (pixelDistance > maxPixelDistance) {
               continue; // skip if the pixel distance is too large
             }
           }

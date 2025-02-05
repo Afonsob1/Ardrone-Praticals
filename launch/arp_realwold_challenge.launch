@@ -54,7 +54,8 @@
     <param name="p2" value="-0.000933" />
     <param name="mapFocalLenght" value="390.598" />
 
-    <rosparam param="T_SC">[0.0, 0.0, 1.0, 0.2, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
+    <rosparam param="T_SC">[0.0, 0.0, 1.0, 0.2, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 1.0]</rosparam>
     <!-- <rosparam param="T_SC">[-0.00195087, -0.03257782, 0.99946730, 0.17409445, -0.99962338,
       -0.02729525, -0.00284087, 0.02255834, 0.02737326, -0.99909642, -0.03251230, 0.00174723,
       0.00000000, 0.00000000, 0.00000000, 1.00000000]</rosparam> -->
@@ -68,6 +69,9 @@
     <param name="THRESHOLD_LANDING" value="0.3" /> <!-- have a smaller tolerance for the last point -->
     <param name="FLYING_HEIGHT" value="1.2" />
     <param name="LAND_HEIGHT" value="0.3" />
+
+    <!-- Frontend parameters -->
+    <param name="maxPixelDistance" value="5" /> <!-- had 30 -->
 
     <!-- Autopilot parameters - PID X -->
     <param name="pid_X_k_p" value="0.5" />
