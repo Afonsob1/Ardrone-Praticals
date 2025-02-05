@@ -79,7 +79,7 @@ class Subscriber
 
 /// @brief get camera parameters
 /// @return true on success
-bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu, double& cv, double& k1, double& k2, double& p1, double&p2, double& mapFocalLength){
+bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu, double& cv, double& k1, double& k2, double& p1, double&p2, double& mapFocalLength, int& maxPixelDistance, int& numPosesToMatch){
   bool success = true;
   
   auto getParam = [&nh, &success](const std::string& param_name, double& param_value) {
@@ -98,8 +98,12 @@ bool getCameraParameters(ros::NodeHandle& nh, double& fu, double&fv, double& cu,
   getParam("arp_node/p1", p1);
   getParam("arp_node/p2", p2);
   getParam("arp_node/mapFocalLength", mapFocalLength);
-  getParam("arp_node/maxPixelDistance", maxPixelDistance);
-  getParam("arp_node/numPosesToMatch", numPosesToMatch);
+  if (!nh.getParam("arp_node//maxPixelDistance", maxPixelDistance)) {
+    ROS_WARN("Failed to get param 'maxPixelDistance'");
+  }
+  if (!nh.getParam("arp_node//numPosesToMatch", numPosesToMatch)) {
+    ROS_WARN("Failed to get param 'numPosesToMatch'");
+  }
 
   ROS_INFO("Camera parameters:");
   ROS_INFO("fu: %f, fv: %f ", fu, fv);
@@ -291,7 +295,8 @@ int main(int argc, char **argv)
 
   // read camera params
   double fu=0, fv=0, cu=0, cv=0, k1=0, k2=0, p1=0, p2=0, mapFocalLength=0.0;
-  getCameraParameters(nh, fu, fv, cu, cv, k1, k2, p1, p2, mapFocalLength);
+  int maxPixelDistance=0, numPosesToMatch=0;
+  getCameraParameters(nh, fu, fv, cu, cv, k1, k2, p1, p2, mapFocalLength, maxPixelDistance, numPosesToMatch);
 
   // init camera
   auto camera = arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion>(

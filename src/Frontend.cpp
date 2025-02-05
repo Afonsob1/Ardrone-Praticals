@@ -57,6 +57,9 @@ Frontend::Frontend(int imageWidth, int imageHeight,
   // BRISK detector and descriptor
   detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(uniformityRadius, octaves, absoluteThreshold, maxNumKpt)); //  10, 0, 100, 2000 
   extractor_.reset(new brisk::BriskDescriptorExtractor(true, false));
+
+  maxPixelDistance_= maxPixelDistance;
+  numPosesToMatch_ = numPosesToMatch;
   
   // leverage camera-aware BRISK (caution: needs the *_new* maps...)
   cv::Mat rays = cv::Mat(imageHeight, imageWidth, CV_32FC3);
@@ -303,7 +306,7 @@ bool Frontend::detectFrames(
           if (T_CW != nullptr) {
             // check pixel distance from projected image point to keypoint
             double pixelDistance = (keypoint - imagePoint).norm();
-            if (pixelDistance > maxPixelDistance) {
+            if (pixelDistance > maxPixelDistance_) {
               continue; // skip if the pixel distance is too large
             }
           }
@@ -372,7 +375,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     // get poses
     auto features = convertMatToTDescriptor(descriptors);
     DBoW2::QueryResults results;
-    dBowDatabase_.query(features, results, numPosesToMatch);
+    dBowDatabase_.query(features, results, numPosesToMatch_);
 
     std::set<uint64_t> possibleFrames;
     for(const DBoW2::Result& res : results) {
