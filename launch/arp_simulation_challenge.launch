@@ -9,7 +9,7 @@
 
   <!-- Emulate controller parameters-->
   <group ns="ardrone_driver">
-    <param name="euler_angle_max" value="0.5" /> <!-- original value: 0.21 -->
+    <param name="euler_angle_max" value="1.0" /> <!-- original value: 0.21 -->
     <param name="control_vz_max" value="700" />
     <param name="control_yaw" value="1.75" />
   </group>
@@ -66,14 +66,14 @@
     <param name="LAND_HEIGHT" value="0.1" />
 
     <!-- Autopilot parameters - PID X -->
-    <param name="pid_X_k_p" value="0.5" />
-    <param name="pid_X_k_i" value="0.02" />
-    <param name="pid_X_k_d" value="0.1" />
+    <param name="pid_X_k_p" value="1.0" />
+    <param name="pid_X_k_i" value="0.05" />
+    <param name="pid_X_k_d" value="0.2" />
 
     <!-- Autopilot parameters - PID Y -->
-    <param name="pid_Y_k_p" value="0.5" />
-    <param name="pid_Y_k_i" value="0.02" />
-    <param name="pid_Y_k_d" value="0.1" />
+    <param name="pid_Y_k_p" value="1.0" />
+    <param name="pid_Y_k_i" value="0.05" />
+    <param name="pid_Y_k_d" value="0.15" />
 
     <!-- Autopilot parameters - PID Z -->
     <param name="pid_Z_k_p" value="1.0" />
