@@ -2,8 +2,8 @@
 #include <ros/ros.h>
 #include <Eigen/Core>
 
-#define SCALING_FACTOR 8
-#define SCALING_FACTOR_Z 4
+#define SCALING_FACTOR 10
+#define SCALING_FACTOR_Z 6
 
 namespace arp {
     Planner::Planner(const std::string& filename, int neighbours) : _neighbours(neighbours)
