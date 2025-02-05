@@ -302,7 +302,7 @@ bool Frontend::detectFrames(
           if (T_CW != nullptr) {
             // check pixel distance from projected image point to keypoint
             double pixelDistance = (keypoint - imagePoint).norm();
-            if (pixelDistance > 30) {
+            if (pixelDistance > 10) {
               continue; // skip if the pixel distance is too large
             }
           }
@@ -367,6 +367,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   }
 
   if(needsReInitialisation || !isDetectSuccess){
+    std::cout << "Reinitialising... BOF" << std::endl;
     // get poses
     auto features = convertMatToTDescriptor(descriptors);
     DBoW2::QueryResults results;
