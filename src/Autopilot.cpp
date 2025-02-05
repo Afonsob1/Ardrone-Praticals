@@ -328,9 +328,9 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     curr_z = x.t_WS[2];
     curr_yaw = kinematics::yawAngle(x.q_WS);
 
-    std::cout << "Current: " << curr_x << " " << curr_y << " " << curr_z << " " << curr_yaw
-              << "Waypoint: " << currentWaypoint.x << " " << currentWaypoint.y << " " << currentWaypoint.z << " " << currentWaypoint.yaw
-               << std::endl;
+    //std::cout << "Current: " << curr_x << " " << curr_y << " " << curr_z << " " << curr_yaw
+    //          << "Waypoint: " << currentWaypoint.x << " " << currentWaypoint.y << " " << currentWaypoint.z << " " << currentWaypoint.yaw
+    //           << std::endl;
     // check if we reached an further waypoint before of the current one
     double smallest_distance = sqrt( pow(curr_x - currentWaypoint.x,2) + pow(curr_y - currentWaypoint.y,2) + pow(curr_z - currentWaypoint.z, 2));
     auto best_wp = waypoints_.begin();

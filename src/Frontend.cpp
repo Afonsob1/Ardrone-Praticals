@@ -335,7 +335,7 @@ bool Frontend::detectFrames(
     }
   } 
 
-  return numberOfMatchesForActiveFrame > 0;
+  return numberOfMatchesForActiveFrame > 3;
 }
 
 struct Point3dComparator {
