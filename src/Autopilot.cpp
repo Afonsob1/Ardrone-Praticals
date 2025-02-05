@@ -283,7 +283,6 @@ void Autopilot::resetIntegrators()
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
 {
-  static auto last_landed_time = ros::Time::now().toSec();
 
   // return if not in automatic mode
   if (!isAutomatic_) {
@@ -294,23 +293,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     return;
   }
 
-  auto status = droneStatus();
-
-  // if landed and waypoints are available, takeoff
-  if (status == DroneStatus::Landed && !waypoints_.empty() ) {
-
-    // check if is landed for more than 1 second
-    auto current_time = ros::Time::now().toSec();
-    auto time_passed = current_time - last_landed_time;
-    if (time_passed > 3) {
-      // if landed for more than 3 second, takeoff
-      takeoff();
-      resetIntegrators();
-      return;
-    }
-  } else if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
-    return;
-  }
+  checkLandedCallback(timeMicroseconds);
 
   std::lock_guard<std::mutex> l(waypointMutex_);
   if(!waypoints_.empty()) {
@@ -360,7 +343,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
       if (currentWaypoint.land) {
         
         land();
-        last_landed_time = ros::Time::now().toSec();
+        Autopilot::last_landed_time_ = ros::Time::now().toSec();
         resetIntegrators();
         return;
       }
@@ -396,6 +379,25 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
   // send to move
   move(u_x, u_y, u_z, u_yaw);
+}
+
+void Autopilot::checkLandedCallback(uint64_t timeMicroseconds)
+  {
+    auto status = droneStatus();
+    // if landed and waypoints are available, takeoff
+    if (!isAutomatic_ ) return;
+    if (status == DroneStatus::Landed && !waypoints_.empty()) {
+      auto current_time = ros::Time::now().toSec();
+      auto time_passed = current_time - Autopilot::last_landed_time_;
+      if (time_passed > 3) {
+        // if landed for more than 3 second, takeoff
+        takeoff();
+        resetIntegrators();
+        return;
+      }
+    } else if (status != DroneStatus::Flying && status != DroneStatus::Flying2 && status != DroneStatus::Hovering) {
+      return;
+    }
 
 }
 

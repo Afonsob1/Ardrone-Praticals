@@ -131,6 +131,8 @@ class Autopilot {
   void controllerCallback(uint64_t timeMicroseconds,
                           const arp::kinematics::RobotState& x);
 
+  void checkLandedCallback(uint64_t timeMicroseconds);                        
+
   void resetIntegrators();
   
   /// \brief A Helper struct to send lists of waypoints.
@@ -196,6 +198,8 @@ class Autopilot {
   arp::PidController pidYaw;
   std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
   std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
+  double last_landed_time_; ///< The last time the drone was landed.
+
 };
 
 } // namespace arp

@@ -39,6 +39,9 @@ class VisualInertialTracker
   typedef std::function<
       void(uint64_t timestampMicroseconds, const kinematics::RobotState & state)> EstimatorCallback;
 
+  typedef std::function<
+      void(uint64_t timestampMicroseconds)> LandedCallback;
+
   /// \brief Set the frontend...
   void setFrontend(Frontend& frontend)
   {
@@ -55,6 +58,10 @@ class VisualInertialTracker
   /// \brief Set a visualisation callback.
   void setControllerCallback(const EstimatorCallback & controllerCallback) {
     controllerCallback_ = controllerCallback;
+  }
+  /// \brief Set a check landed callback.
+  void setCheckLandedCallback(const LandedCallback & checkLandedCallback) {
+    checkLandedCallback_ = checkLandedCallback;
   }
 
   /// \brief Set a visualisation callback.
@@ -112,6 +119,7 @@ class VisualInertialTracker
   threadsafe::ThreadSafeQueue<StateEstimate, Eigen::aligned_allocator<StateEstimate>> visualisationQueue_;
 
   EstimatorCallback controllerCallback_;
+  LandedCallback checkLandedCallback_;
   EstimatorCallback visualisationCallback_;
   
   std::atomic_bool fusionEnabled_{true};
