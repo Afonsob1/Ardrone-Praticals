@@ -377,7 +377,7 @@ int main(int argc, char **argv)
   auto droneStatus = autopilot.droneStatus();
 
   // challenge start time
-  std::chrono::steady_clock::time_point challenge_start;
+  double challenge_start;
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -533,7 +533,7 @@ int main(int argc, char **argv)
           std::cout << "Drone has to be landed to start challenge" << std::endl;
         } else {
           std::cout << "Starting Challenge Mode" << std::endl;
-          challenge_start = std::chrono::steady_clock::now();
+          challenge_start = ros::Time::now().toSec();
           planAndFlyChallenge(autopilot, viEkf, planner, goal, flyChallenge, THRESHOLD_MIDDLE_WAYPOINTS, THRESHOLD_LANDING, FLYING_HEIGHT, LAND_HEIGHT);
         }
       } else {
@@ -550,9 +550,9 @@ int main(int argc, char **argv)
     }
 
     if (flyChallenge && autopilot.waypointsLeft() == 0) {
-      auto current_time = std::chrono::steady_clock::now();
-      auto time_passed = std::chrono::duration_cast<std::chrono::seconds>(current_time - challenge_start);
-      std::cout << "Challenge completed in " << time_passed.count() << " s" << std::endl;
+      auto current_time = ros::Time::now().toSec();
+      auto time_passed = (current_time - challenge_start);
+      std::cout << "Challenge completed in " << time_passed << " s" << std::endl;
       flyChallenge = false;
       autopilot.setManual();
     }
