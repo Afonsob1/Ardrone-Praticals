@@ -493,11 +493,11 @@ int main(int argc, char **argv)
       }
     }
 
-    if ((droneStatus == arp::Autopilot::Flying ||
-      droneStatus == arp::Autopilot::Hovering ||
-      droneStatus == arp::Autopilot::Flying2 ) && flyChallenge) {
-        std::cout << "Waypoints Left: " << autopilot.waypointsLeft() << std::endl;
-    }
+    // if ((droneStatus == arp::Autopilot::Flying ||
+    //   droneStatus == arp::Autopilot::Hovering ||
+    //   droneStatus == arp::Autopilot::Flying2 ) && flyChallenge) {
+    //     std::cout << "Waypoints Left: " << autopilot.waypointsLeft() << std::endl;
+    // }
 
     // check keyboard to move the drone
     double forward = 0;

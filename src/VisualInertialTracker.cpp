@@ -155,7 +155,9 @@ void VisualInertialTracker::controllerLoop()
   for (;;) {
     // get estimator output
     StateEstimate stateEstimate;
-    checkLandedCallback_(stateEstimate.timestampMicroseconds);
+    if (checkLandedCallback_) {
+      checkLandedCallback_(stateEstimate.timestampMicroseconds);
+    }
     if (!controllerQueue_.PopBlocking(&stateEstimate)) {
       return;
     } else {

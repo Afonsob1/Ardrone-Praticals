@@ -162,8 +162,6 @@ TEST(ImuKinematics, numericDifferencesDiscreteTime)
     F_numDiff.block<3,1>(3,i+12) = 2*(arp::kinematics::oplus(q_SW)*delta_x.segment<4>(3)).head<3>();
     F_numDiff.block<9,1>(6,i+12) = delta_x.segment<9>(7);
   }
-  //std::cout << "F_numDiff=\n" << F_numDiff << std::endl;
-  //std::cout << "F=\n" << F << std::endl;
   if((F-F_numDiff).norm()>=1.0e-5)
     std::cout << "Wrong Jacobian: F - F_numDiff = " << std::endl << (F-F_numDiff) << std::endl;
   // now num-diff should match analytical

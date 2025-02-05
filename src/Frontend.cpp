@@ -371,7 +371,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   }
 
   if(needsReInitialisation || !isDetectSuccess){
-    std::cout << "Reinitialising... BOF" << std::endl;
     // get poses
     auto features = convertMatToTDescriptor(descriptors);
     DBoW2::QueryResults results;
