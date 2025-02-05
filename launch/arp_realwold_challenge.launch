@@ -72,6 +72,7 @@
 
     <!-- Frontend parameters -->
     <param name="maxPixelDistance" value="5" /> <!-- had 30 -->
+    <param name="numPosesToMatch" value="15" /> <!-- had 15 -->
 
     <!-- Autopilot parameters - PID X -->
     <param name="pid_X_k_p" value="0.5" />

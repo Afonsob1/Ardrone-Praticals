@@ -32,7 +32,8 @@ Frontend::Frontend(int imageWidth, int imageHeight,
                                    double k1, double k2, double p1, double p2,
                                    double uniformityRadius, size_t octaves, 
                                     double absoluteThreshold, size_t maxNumKpt,
-                                    double mapFocalLength, size_t maxPixelDistance
+                                    double mapFocalLength, size_t maxPixelDistance,
+                                    size_t numPosesToMatch
                                    ) :
   camera_(imageWidth, imageHeight, focalLengthU, focalLengthV, imageCenterU,
           imageCenterV,
@@ -371,7 +372,6 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     // get poses
     auto features = convertMatToTDescriptor(descriptors);
     DBoW2::QueryResults results;
-    int numPosesToMatch = 15;
     dBowDatabase_.query(features, results, numPosesToMatch);
 
     std::set<uint64_t> possibleFrames;

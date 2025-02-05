@@ -52,7 +52,8 @@ class Frontend
                            double p2,
                            double uniformityRadius, size_t octaves, 
                            double absoluteThreshold, size_t maxNumKpt,
-                           double mapFocalLength, size_t maxPixelDistance);
+                           double mapFocalLength, size_t maxPixelDistance,
+                           size_t numPosesToMatch);
 
   /// \brief Load the map
   /// \parameter path The full path to the map file.
